@@ -2,16 +2,22 @@ import flet as ft
 import json
 import os
 from language_manager import LanguageManager
+from gui.main_tab import get_main_tab
+from gui.settings_tab import get_settings_tab
 
 # Глобальний менеджер мов
 lang_manager = LanguageManager()
 
 def main(page: ft.Page):
     page.title = lang_manager.get_text("app_title")
-    page.window_width = 700
-    page.window_height = 600
+    page.window_width = 1000
+    page.window_height = 1000
     page.padding = 20
-    page.theme_mode = ft.ThemeMode.LIGHT
+    # Встановлюємо тему з конфігу
+    if lang_manager.get_theme() == "dark":
+        page.theme_mode = ft.ThemeMode.DARK
+    else:
+        page.theme_mode = ft.ThemeMode.LIGHT
     
     # Лічильник символів
     char_counter = ft.Text(
@@ -72,9 +78,11 @@ def main(page: ft.Page):
         if page.theme_mode == ft.ThemeMode.LIGHT:
             page.theme_mode = ft.ThemeMode.DARK
             theme_switch.text = lang_manager.get_text("light_theme")
+            lang_manager.set_theme("dark")
         else:
             page.theme_mode = ft.ThemeMode.LIGHT
             theme_switch.text = lang_manager.get_text("dark_theme")
+            lang_manager.set_theme("light")
         page.update()
     
     # Перемикач теми
@@ -173,63 +181,18 @@ def main(page: ft.Page):
     )
     
     # Вкладка з основним функціоналом
-    main_tab = ft.Tab(
-        text=lang_manager.get_text("main_tab"),
-        icon=ft.Icons.EDIT,
-        content=ft.Container(
-            content=ft.Column([
-                ft.Container(height=10),
-                char_counter,
-                ft.Container(height=5),
-                text_input,
-                ft.Container(height=15),
-                ft.Row([
-                    submit_button
-                ], alignment=ft.MainAxisAlignment.CENTER)
-            ], 
-            spacing=0,
-            alignment=ft.MainAxisAlignment.START,
-            expand=True
-            ),
-            padding=20
-        )
-    )
-    
+    main_tab = get_main_tab(lang_manager, char_counter, text_input, submit_button)
     # Вкладка з налаштуваннями
-    settings_tab = ft.Tab(
-        text=lang_manager.get_text("settings_tab"),
-        icon=ft.Icons.SETTINGS,
-        content=ft.Container(
-            content=ft.Column([
-                ft.Container(height=20),
-                settings_title,
-                ft.Divider(height=30),
-                ft.Row([
-                    ft.Icon(ft.Icons.PALETTE, size=30),
-                    theme_label,
-                ], spacing=10),
-                ft.Container(height=10),
-                theme_switch,
-                ft.Container(height=20),
-                ft.Row([
-                    ft.Icon(ft.Icons.LANGUAGE, size=30),
-                    ft.Text(lang_manager.get_text("language_interface"), size=16),
-                ], spacing=10),
-                ft.Container(height=10),
-                language_dropdown,
-                ft.Container(height=30),
-                app_info_title,
-                ft.Container(height=10),
-                version_text,
-                author_text,
-                description_text,
-            ], 
-            spacing=5,
-            alignment=ft.MainAxisAlignment.START,
-            expand=True
-            ),
-            padding=20
-        )
+    settings_tab = get_settings_tab(
+        lang_manager,
+        settings_title,
+        theme_label,
+        theme_switch,
+        language_dropdown,
+        app_info_title,
+        version_text,
+        author_text,
+        description_text
     )
     
     # Створюємо tabs

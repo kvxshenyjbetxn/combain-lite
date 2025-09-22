@@ -7,14 +7,14 @@ class LanguageManager:
     def __init__(self):
         self.config_file = "config.json"
         self.current_language = "uk"  # За замовчуванням українська
+        self.theme = "light"  # За замовчуванням світла тема
         self.translations: Dict[str, Any] = {}
         self.available_languages = {
             "uk": "Українська",
             "en": "English", 
             "ru": "Русский"
         }
-        
-        # Завантажуємо збережену мову з конфігурації
+        # Завантажуємо збережені налаштування
         self.load_config()
         self.load_language(self.current_language)
     
@@ -25,23 +25,36 @@ class LanguageManager:
                 with open(self.config_file, 'r', encoding='utf-8') as file:
                     config = json.load(file)
                     self.current_language = config.get('language', 'uk')
+                    self.theme = config.get('theme', 'light')
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Помилка завантаження конфігурації: {e}")
             self.current_language = "uk"
+            self.theme = "light"
     
     def save_config(self):
         """Зберігає поточну конфігурацію в файл"""
         try:
-            config = {"language": self.current_language}
+            config = {"language": self.current_language, "theme": self.theme}
             with open(self.config_file, 'w', encoding='utf-8') as file:
                 json.dump(config, file, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Помилка збереження конфігурації: {e}")
+
+    def set_theme(self, theme: str):
+        if theme in ("light", "dark"):
+            self.theme = theme
+            self.save_config()
+            return True
+        return False
+
+    def get_theme(self) -> str:
+        return self.theme
     
     def load_language(self, language_code: str) -> bool:
         """Завантажує переклад для вказаної мови"""
         try:
-            file_path = os.path.join("translations", f"{language_code}.json")
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(base_dir, "translations", f"{language_code}.json")
             with open(file_path, 'r', encoding='utf-8') as file:
                 self.translations = json.load(file)
                 self.current_language = language_code
