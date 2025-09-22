@@ -104,10 +104,9 @@ def main(page: ft.Page):
         if selected_lang and lang_manager.set_language(selected_lang):
             # Оновлюємо заголовок сторінки
             page.title = lang_manager.get_text("app_title")
-            
+
             # Оновлюємо всі текстові елементи
             update_ui_texts()
-            page.update()
     
     # Dropdown для вибору мови
     language_dropdown = ft.Dropdown(
@@ -120,32 +119,41 @@ def main(page: ft.Page):
         on_change=change_language,
         width=200
     )
+    # Підсказка про перезапуск
+    language_hint = ft.Text(
+        lang_manager.get_text("restart_required"),
+        size=12,
+        color=ft.Colors.RED_400,
+        italic=True
+    )
     
     # Функція для оновлення всіх текстів UI
     def update_ui_texts():
         # Оновлюємо лічильник символів
         text = text_input.value or ""
         char_counter.value = lang_manager.get_text("characters_count", len(text))
-        
+
         # Оновлюємо поле введення
         text_input.label = lang_manager.get_text("enter_text")
-        
+
         # Оновлюємо кнопку відправки
         submit_button.text = lang_manager.get_text("submit_button")
-        
+
         # Оновлюємо кнопку теми
         if page.theme_mode == ft.ThemeMode.LIGHT:
             theme_switch.text = lang_manager.get_text("dark_theme")
         else:
             theme_switch.text = lang_manager.get_text("light_theme")
-        
+
         # Оновлюємо dropdown мови
         language_dropdown.label = lang_manager.get_text("language_interface")
-        
+
         # Оновлюємо вкладки
         main_tab.text = lang_manager.get_text("main_tab")
+        image_tab.text = lang_manager.get_text("image_tab")
+        voice_tab.text = lang_manager.get_text("voice_tab")
         settings_tab.text = lang_manager.get_text("settings_tab")
-        
+
         # Оновлюємо тексти в налаштуваннях
         settings_title.value = lang_manager.get_text("settings_title")
         theme_label.value = lang_manager.get_text("theme_interface")
@@ -153,9 +161,12 @@ def main(page: ft.Page):
         version_text.value = lang_manager.get_text("version")
         author_text.value = lang_manager.get_text("author")
         description_text.value = lang_manager.get_text("description")
-        
+
         # Оновлюємо заголовок додатка
         app_title.value = lang_manager.get_text("app_title")
+
+        # Оновлюємо всю сторінку
+        page.update()
     
     # Створюємо текстові елементи для налаштувань
     settings_title = ft.Text(
@@ -191,6 +202,7 @@ def main(page: ft.Page):
         theme_label,
         theme_switch,
         language_dropdown,
+        language_hint,
         app_info_title,
         version_text,
         author_text,

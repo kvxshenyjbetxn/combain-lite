@@ -1,6 +1,6 @@
 import flet as ft
 
-def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, language_dropdown, app_info_title, version_text, author_text, description_text):
+def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, language_dropdown, language_hint, app_info_title, version_text, author_text, description_text):
     return ft.Tab(
         text=lang_manager.get_text("settings_tab"),
         icon=ft.Icons.SETTINGS,
@@ -22,6 +22,7 @@ def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, la
                 ], spacing=10),
                 ft.Container(height=10),
                 language_dropdown,
+                language_hint,
                 ft.Container(height=30),
                 app_info_title,
                 ft.Container(height=10),

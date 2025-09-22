@@ -21,5 +21,6 @@
   "image_tab_title": "Image Generation",
   "voice_tab": "Voice Synthesis",
   "voice_tab_title": "Voice Synthesis",
-  "main_tab_title": "Text Processing"
+  "main_tab_title": "Text Processing",
+  "restart_required": "You need to restart the application to fully apply the new language."
 }
