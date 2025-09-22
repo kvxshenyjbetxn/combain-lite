@@ -12,8 +12,8 @@ lang_manager = LanguageManager()
 
 def main(page: ft.Page):
     page.title = lang_manager.get_text("app_title")
-    page.window_width = 1000
-    page.window_height = 1000
+    page.window_width = 1920
+    page.window_height = 1080
     page.padding = 20
     # Встановлюємо тему з конфігу
     if lang_manager.get_theme() == "dark":
