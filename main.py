@@ -3,8 +3,8 @@ import flet as ft
 
 def main(page: ft.Page):
     page.title = "Combain"
-    page.window_width = 600
-    page.window_height = 500
+    page.window_width = 700
+    page.window_height = 600
     page.padding = 20
     page.theme_mode = ft.ThemeMode.LIGHT
     
@@ -19,8 +19,8 @@ def main(page: ft.Page):
     text_input = ft.TextField(
         label="Введіть текст",
         multiline=True,
-        min_lines=10,
-        max_lines=15,
+        min_lines=12,
+        max_lines=18,
         border_color=ft.Colors.BLUE_400,
         focused_border_color=ft.Colors.BLUE_600,
         expand=True
@@ -41,14 +41,15 @@ def main(page: ft.Page):
         print(f"Відправлено на обробку: {len(text)} символів")
         # Тут можна додати будь-яку логіку обробки
         
-        # Показуємо повідомлення користувачу
-        page.show_snack_bar(
-            ft.SnackBar(
-                content=ft.Text(f"Текст відправлено на обробку! ({len(text)} символів)"),
-                action="OK",
-                action_color=ft.Colors.BLUE
-            )
+        # Створюємо snack bar та додаємо його на сторінку
+        snack_bar = ft.SnackBar(
+            content=ft.Text(f"Текст відправлено на обробку! ({len(text)} символів)"),
+            action="OK",
+            action_color=ft.Colors.BLUE
         )
+        page.overlay.append(snack_bar)
+        snack_bar.open = True
+        page.update()
     
     # Кнопка відправки
     submit_button = ft.ElevatedButton(
@@ -61,26 +62,111 @@ def main(page: ft.Page):
         height=40
     )
     
+    # Функція для зміни теми
+    def change_theme(e):
+        if page.theme_mode == ft.ThemeMode.LIGHT:
+            page.theme_mode = ft.ThemeMode.DARK
+            theme_switch.label = "Світла тема"
+        else:
+            page.theme_mode = ft.ThemeMode.LIGHT
+            theme_switch.label = "Темна тема"
+        page.update()
+    
+    # Перемикач теми
+    theme_switch = ft.ElevatedButton(
+        text="Темна тема",
+        icon=ft.Icons.DARK_MODE,
+        on_click=change_theme,
+        bgcolor=ft.Colors.GREY_600,
+        color=ft.Colors.WHITE,
+        width=150,
+        height=40
+    )
+    
+    # Вкладка з основним функціоналом
+    main_tab = ft.Tab(
+        text="Основна",
+        icon=ft.Icons.EDIT,
+        content=ft.Container(
+            content=ft.Column([
+                ft.Container(height=10),
+                char_counter,
+                ft.Container(height=5),
+                text_input,
+                ft.Container(height=15),
+                ft.Row([
+                    submit_button
+                ], alignment=ft.MainAxisAlignment.CENTER)
+            ], 
+            spacing=0,
+            alignment=ft.MainAxisAlignment.START,
+            expand=True
+            ),
+            padding=20
+        )
+    )
+    
+    # Вкладка з налаштуваннями
+    settings_tab = ft.Tab(
+        text="Налаштування",
+        icon=ft.Icons.SETTINGS,
+        content=ft.Container(
+            content=ft.Column([
+                ft.Container(height=20),
+                ft.Text(
+                    "Налаштування програми",
+                    size=20,
+                    weight=ft.FontWeight.BOLD
+                ),
+                ft.Divider(height=30),
+                ft.Row([
+                    ft.Icon(ft.Icons.PALETTE, size=30),
+                    ft.Text("Тема інтерфейсу:", size=16),
+                ], spacing=10),
+                ft.Container(height=10),
+                theme_switch,
+                ft.Container(height=30),
+                ft.Text(
+                    "Інформація про програму:",
+                    size=16,
+                    weight=ft.FontWeight.BOLD
+                ),
+                ft.Container(height=10),
+                ft.Text("Версія: 1.0", size=14),
+                ft.Text("Автор: Combain Team", size=14),
+                ft.Text("Опис: Програма-пустишка для обробки тексту", size=14),
+            ], 
+            spacing=5,
+            alignment=ft.MainAxisAlignment.START,
+            expand=True
+            ),
+            padding=20
+        )
+    )
+    
+    # Створюємо tabs
+    tabs = ft.Tabs(
+        selected_index=0,
+        animation_duration=300,
+        tabs=[main_tab, settings_tab],
+        expand=True
+    )
+    
     # Додаємо всі елементи на сторінку
     page.add(
         ft.Column([
             ft.Text(
-                "Програма-пустишка",
-                size=24,
+                "Combain",
+                size=28,
                 weight=ft.FontWeight.BOLD,
                 color=ft.Colors.BLUE_800
             ),
-            ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
-            char_counter,
-            ft.Container(height=5),  # Невеликий відступ
-            text_input,
-            ft.Container(height=15),  # Відступ між полем та кнопкою
-            ft.Row([
-                submit_button
-            ], alignment=ft.MainAxisAlignment.CENTER)
+            ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
+            tabs
         ], 
         spacing=0,
-        alignment=ft.MainAxisAlignment.START
+        alignment=ft.MainAxisAlignment.START,
+        expand=True
         )
     )
 
