@@ -16,5 +16,11 @@
   "version": "Version: 1.0",
   "author": "Author: Combain Team",
   "description": "Description: Dummy text processing application",
-  "submit_processing": "Submitted for processing: {0} characters"
+  "submit_processing": "Submitted for processing: {0} characters",
+  "image_tab": "Image Generation",
+  "image_tab_title": "Image Generation",
+  "image_tab_desc": "Generate images using AI or other tools.",
+  "voice_tab": "Voice Synthesis",
+  "voice_tab_title": "Voice Synthesis",
+  "voice_tab_desc": "Convert text to speech or synthesize voice."
 }

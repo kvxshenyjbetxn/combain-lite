@@ -4,6 +4,8 @@ import os
 from language_manager import LanguageManager
 from gui.main_tab import get_main_tab
 from gui.settings_tab import get_settings_tab
+from gui.image_tab import get_image_tab
+from gui.voice_tab import get_voice_tab
 
 # Глобальний менеджер мов
 lang_manager = LanguageManager()
@@ -194,12 +196,16 @@ def main(page: ft.Page):
         author_text,
         description_text
     )
+    # Вкладка генерації зображень
+    image_tab = get_image_tab(lang_manager)
+    # Вкладка озвучки
+    voice_tab = get_voice_tab(lang_manager)
     
     # Створюємо tabs
     tabs = ft.Tabs(
         selected_index=0,
         animation_duration=300,
-        tabs=[main_tab, settings_tab],
+        tabs=[main_tab, image_tab, voice_tab, settings_tab],
         expand=True
     )
     

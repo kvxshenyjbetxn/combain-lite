@@ -5,10 +5,11 @@ from typing import Dict, Any
 
 class LanguageManager:
     def __init__(self):
-        self.config_file = "config.json"
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.config_file = os.path.join(base_dir, "config.json")
         self.current_language = "uk"  # За замовчуванням українська
         self.theme = "light"  # За замовчуванням світла тема
-        self.translations: Dict[str, Any] = {}
+        self.translations = {}
         self.available_languages = {
             "uk": "Українська",
             "en": "English", 
