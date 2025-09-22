@@ -194,7 +194,7 @@ def main(page: ft.Page):
     )
     
     # Вкладка з основним функціоналом
-    main_tab = get_main_tab(lang_manager, char_counter, text_input, submit_button)
+    main_tab = get_main_tab(lang_manager, char_counter, text_input, submit_button, page)
     # Вкладка з налаштуваннями
     settings_tab = get_settings_tab(
         lang_manager,
@@ -209,7 +209,7 @@ def main(page: ft.Page):
         description_text
     )
     # Вкладка генерації зображень
-    image_tab = get_image_tab(lang_manager)
+    image_tab = get_image_tab(lang_manager, page)
     # Вкладка озвучки
     voice_tab = get_voice_tab(lang_manager)
     

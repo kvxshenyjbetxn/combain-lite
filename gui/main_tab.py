@@ -1,6 +1,7 @@
 import flet as ft
+from gui.gallery import GalleryDemo
 
-def get_main_tab(lang_manager, char_counter, text_input, submit_button=None):
+def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, page=None):
     # Опис як на вкладці Озвучка
     #description = ft.Text(lang_manager.get_text("main_tab_desc") if lang_manager.get_text("main_tab_desc") != "main_tab_desc" else "Введіть текст для обробки.", size=14)
     # Зелена велика кнопка
@@ -28,7 +29,9 @@ def get_main_tab(lang_manager, char_counter, text_input, submit_button=None):
                 ft.Container(height=15),
                 ft.Row([
                     main_submit_button
-                ], alignment=ft.MainAxisAlignment.CENTER)
+                ], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Divider(height=30),
+                GalleryDemo(page)
             ],
             spacing=10,
             alignment=ft.MainAxisAlignment.START,
