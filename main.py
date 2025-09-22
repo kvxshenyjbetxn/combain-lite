@@ -28,22 +28,31 @@ def main(page: ft.Page):
         color=ft.Colors.GREY_700
     )
     
-    # Поле для вводу тексту
+    # Поле для вводу тексту (динамічне)
     text_input = ft.TextField(
         label=lang_manager.get_text("enter_text"),
         multiline=True,
-        min_lines=12,
+        min_lines=2,  # маленьке за замовчуванням
         max_lines=18,
         border_color=ft.Colors.BLUE_400,
         focused_border_color=ft.Colors.BLUE_600,
-        expand=True
+        expand=False
     )
     
     # Функція для оновлення лічильника символів
     def update_char_count(e):
         text = text_input.value or ""
         char_counter.value = lang_manager.get_text("characters_count", len(text))
-        page.update()
+        # Динамічно розширюємо поле, якщо є текст
+        if text.strip():
+            text_input.min_lines = 12
+            text_input.expand = True
+        else:
+            text_input.min_lines = 2
+            text_input.expand = False
+        text_input.update()
+        char_counter.update()
+        # page.update() не потрібен тут
     
     # Прив'язуємо функцію до зміни тексту
     text_input.on_change = update_char_count
@@ -53,7 +62,15 @@ def main(page: ft.Page):
         text = text_input.value or ""
         print(lang_manager.get_text("submit_processing", len(text)))
         # Тут можна додати будь-яку логіку обробки
-        
+
+        # Очищаємо поле і повертаємо до малого розміру
+        text_input.value = ""
+        text_input.min_lines = 2
+        text_input.expand = False
+        text_input.update()
+        char_counter.value = lang_manager.get_text("characters_count", 0)
+        char_counter.update()
+
         # Створюємо snack bar та додаємо його на сторінку
         snack_bar = ft.SnackBar(
             content=ft.Text(lang_manager.get_text("submit_message", len(text))),

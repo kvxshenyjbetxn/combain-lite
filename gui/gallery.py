@@ -14,22 +14,55 @@ GALLERY_IMAGES = [
 
 def GalleryDemo(page):
     # Стан для діалогу перегенерації
-    prompt_field = ft.TextField(label="Промпт", multiline=True, width=300)
-    def close_dialog(e):
-        page.dialog.open = False
+    prompt_field = ft.TextField(label="Промпт", multiline=True, width=480, min_lines=5, max_lines=5, expand=False)
+    def close_dialog(e=None):
+        dialog.open = False
         page.update()
-    def show_regen_dialog(prompt):
-        prompt_field.value = prompt
-        dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Перегенерувати зображення"),
+    dialog = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Перегенерувати зображення"),
+        content=ft.Container(
+            width=500,
             content=ft.Column([
                 prompt_field,
-                ft.ElevatedButton("Перегенерувати", icon=ft.Icons.REFRESH, on_click=close_dialog)
+                ft.Row([
+                    ft.ElevatedButton(
+                        "Скасувати",
+                        icon=ft.Icons.CLOSE,
+                        on_click=close_dialog,
+                        width=180,
+                        height=44,
+                        bgcolor=ft.Colors.RED_400,
+                        color=ft.Colors.WHITE,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
+                    ),
+                    ft.ElevatedButton(
+                        "Перегенерувати",
+                        icon=ft.Icons.REFRESH,
+                        width=180,
+                        height=44,
+                        bgcolor=ft.Colors.BLUE_400,
+                        color=ft.Colors.WHITE,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
+                    )
+                ], alignment=ft.MainAxisAlignment.CENTER, spacing=16)
             ], tight=True)
         )
-        page.dialog = dialog
+    )
+    if dialog not in page.overlay:
+        page.overlay.append(dialog)
+    def close_dialog(e=None):
+        dialog.open = False
+        page.update()
+    def on_regen_click(e):
+        close_dialog()
+    def show_regen_dialog(prompt):
+        prompt_field.value = prompt
         dialog.open = True
+        # dialog.content — це Container, а controls — у Column (dialog.content.content)
+        if isinstance(dialog.content.content, ft.Column):
+            # Row з кнопками — другий елемент
+            dialog.content.content.controls[1].controls[1].on_click = on_regen_click
         page.update()
 
     # Галерея
