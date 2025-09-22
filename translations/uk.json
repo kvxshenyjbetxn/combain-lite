@@ -1,0 +1,20 @@
+{
+  "app_title": "Combain",
+  "main_tab": "Основна",
+  "settings_tab": "Налаштування", 
+  "enter_text": "Введіть текст",
+  "characters_count": "Символів: {0}",
+  "submit_button": "Відправити на обробку",
+  "submit_message": "Текст відправлено на обробку! ({0} символів)",
+  "submit_ok": "OK",
+  "dark_theme": "Темна тема",
+  "light_theme": "Світла тема",
+  "settings_title": "Налаштування програми",
+  "theme_interface": "Тема інтерфейсу:",
+  "language_interface": "Мова інтерфейсу:",
+  "app_info": "Інформація про програму:",
+  "version": "Версія: 1.0",
+  "author": "Автор: Combain Team",
+  "description": "Опис: Програма-пустишка для обробки тексту",
+  "submit_processing": "Відправлено на обробку: {0} символів"
+}

@@ -1,0 +1,20 @@
+{
+  "app_title": "Combain",
+  "main_tab": "Main",
+  "settings_tab": "Settings",
+  "enter_text": "Enter text",
+  "characters_count": "Characters: {0}",
+  "submit_button": "Submit for processing",
+  "submit_message": "Text submitted for processing! ({0} characters)",
+  "submit_ok": "OK",
+  "dark_theme": "Dark theme",
+  "light_theme": "Light theme", 
+  "settings_title": "Application settings",
+  "theme_interface": "Interface theme:",
+  "language_interface": "Interface language:",
+  "app_info": "Application information:",
+  "version": "Version: 1.0",
+  "author": "Author: Combain Team",
+  "description": "Description: Dummy text processing application",
+  "submit_processing": "Submitted for processing: {0} characters"
+}

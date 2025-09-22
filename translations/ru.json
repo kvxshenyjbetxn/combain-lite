@@ -1,0 +1,20 @@
+{
+  "app_title": "Combain",
+  "main_tab": "Главная",
+  "settings_tab": "Настройки",
+  "enter_text": "Введите текст",
+  "characters_count": "Символов: {0}",
+  "submit_button": "Отправить на обработку",
+  "submit_message": "Текст отправлен на обработку! ({0} символов)",
+  "submit_ok": "OK",
+  "dark_theme": "Темная тема",
+  "light_theme": "Светлая тема",
+  "settings_title": "Настройки программы",
+  "theme_interface": "Тема интерфейса:",
+  "language_interface": "Язык интерфейса:",
+  "app_info": "Информация о программе:",
+  "version": "Версия: 1.0",
+  "author": "Автор: Combain Team",
+  "description": "Описание: Программа-заглушка для обработки текста",
+  "submit_processing": "Отправлено на обработку: {0} символов"
+}

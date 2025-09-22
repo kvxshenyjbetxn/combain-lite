@@ -1,8 +1,13 @@
 import flet as ft
+import json
+import os
+from language_manager import LanguageManager
 
+# Глобальний менеджер мов
+lang_manager = LanguageManager()
 
 def main(page: ft.Page):
-    page.title = "Combain"
+    page.title = lang_manager.get_text("app_title")
     page.window_width = 700
     page.window_height = 600
     page.padding = 20
@@ -10,14 +15,14 @@ def main(page: ft.Page):
     
     # Лічильник символів
     char_counter = ft.Text(
-        "Символів: 0",
+        lang_manager.get_text("characters_count", 0),
         size=14,
         color=ft.Colors.GREY_700
     )
     
     # Поле для вводу тексту
     text_input = ft.TextField(
-        label="Введіть текст",
+        label=lang_manager.get_text("enter_text"),
         multiline=True,
         min_lines=12,
         max_lines=18,
@@ -29,7 +34,7 @@ def main(page: ft.Page):
     # Функція для оновлення лічильника символів
     def update_char_count(e):
         text = text_input.value or ""
-        char_counter.value = f"Символів: {len(text)}"
+        char_counter.value = lang_manager.get_text("characters_count", len(text))
         page.update()
     
     # Прив'язуємо функцію до зміни тексту
@@ -38,13 +43,13 @@ def main(page: ft.Page):
     # Функція для кнопки відправки
     def on_submit_click(e):
         text = text_input.value or ""
-        print(f"Відправлено на обробку: {len(text)} символів")
+        print(lang_manager.get_text("submit_processing", len(text)))
         # Тут можна додати будь-яку логіку обробки
         
         # Створюємо snack bar та додаємо його на сторінку
         snack_bar = ft.SnackBar(
-            content=ft.Text(f"Текст відправлено на обробку! ({len(text)} символів)"),
-            action="OK",
+            content=ft.Text(lang_manager.get_text("submit_message", len(text))),
+            action=lang_manager.get_text("submit_ok"),
             action_color=ft.Colors.BLUE
         )
         page.overlay.append(snack_bar)
@@ -53,7 +58,7 @@ def main(page: ft.Page):
     
     # Кнопка відправки
     submit_button = ft.ElevatedButton(
-        text="Відправити на обробку",
+        text=lang_manager.get_text("submit_button"),
         icon=ft.Icons.SEND,
         on_click=on_submit_click,
         bgcolor=ft.Colors.BLUE_400,
@@ -66,15 +71,15 @@ def main(page: ft.Page):
     def change_theme(e):
         if page.theme_mode == ft.ThemeMode.LIGHT:
             page.theme_mode = ft.ThemeMode.DARK
-            theme_switch.label = "Світла тема"
+            theme_switch.text = lang_manager.get_text("light_theme")
         else:
             page.theme_mode = ft.ThemeMode.LIGHT
-            theme_switch.label = "Темна тема"
+            theme_switch.text = lang_manager.get_text("dark_theme")
         page.update()
     
     # Перемикач теми
     theme_switch = ft.ElevatedButton(
-        text="Темна тема",
+        text=lang_manager.get_text("dark_theme"),
         icon=ft.Icons.DARK_MODE,
         on_click=change_theme,
         bgcolor=ft.Colors.GREY_600,
@@ -83,9 +88,93 @@ def main(page: ft.Page):
         height=40
     )
     
+    # Функція для зміни мови
+    def change_language(e):
+        selected_lang = language_dropdown.value
+        if selected_lang and lang_manager.set_language(selected_lang):
+            # Оновлюємо заголовок сторінки
+            page.title = lang_manager.get_text("app_title")
+            
+            # Оновлюємо всі текстові елементи
+            update_ui_texts()
+            page.update()
+    
+    # Dropdown для вибору мови
+    language_dropdown = ft.Dropdown(
+        label=lang_manager.get_text("language_interface"),
+        value=lang_manager.get_current_language(),
+        options=[
+            ft.dropdown.Option(key=code, text=name) 
+            for code, name in lang_manager.get_available_languages().items()
+        ],
+        on_change=change_language,
+        width=200
+    )
+    
+    # Функція для оновлення всіх текстів UI
+    def update_ui_texts():
+        # Оновлюємо лічильник символів
+        text = text_input.value or ""
+        char_counter.value = lang_manager.get_text("characters_count", len(text))
+        
+        # Оновлюємо поле введення
+        text_input.label = lang_manager.get_text("enter_text")
+        
+        # Оновлюємо кнопку відправки
+        submit_button.text = lang_manager.get_text("submit_button")
+        
+        # Оновлюємо кнопку теми
+        if page.theme_mode == ft.ThemeMode.LIGHT:
+            theme_switch.text = lang_manager.get_text("dark_theme")
+        else:
+            theme_switch.text = lang_manager.get_text("light_theme")
+        
+        # Оновлюємо dropdown мови
+        language_dropdown.label = lang_manager.get_text("language_interface")
+        
+        # Оновлюємо вкладки
+        main_tab.text = lang_manager.get_text("main_tab")
+        settings_tab.text = lang_manager.get_text("settings_tab")
+        
+        # Оновлюємо тексти в налаштуваннях
+        settings_title.value = lang_manager.get_text("settings_title")
+        theme_label.value = lang_manager.get_text("theme_interface")
+        app_info_title.value = lang_manager.get_text("app_info")
+        version_text.value = lang_manager.get_text("version")
+        author_text.value = lang_manager.get_text("author")
+        description_text.value = lang_manager.get_text("description")
+        
+        # Оновлюємо заголовок додатка
+        app_title.value = lang_manager.get_text("app_title")
+    
+    # Створюємо текстові елементи для налаштувань
+    settings_title = ft.Text(
+        lang_manager.get_text("settings_title"),
+        size=20,
+        weight=ft.FontWeight.BOLD
+    )
+    
+    theme_label = ft.Text(lang_manager.get_text("theme_interface"), size=16)
+    app_info_title = ft.Text(
+        lang_manager.get_text("app_info"),
+        size=16,
+        weight=ft.FontWeight.BOLD
+    )
+    version_text = ft.Text(lang_manager.get_text("version"), size=14)
+    author_text = ft.Text(lang_manager.get_text("author"), size=14)
+    description_text = ft.Text(lang_manager.get_text("description"), size=14)
+    
+    # Заголовок додатка
+    app_title = ft.Text(
+        lang_manager.get_text("app_title"),
+        size=28,
+        weight=ft.FontWeight.BOLD,
+        color=ft.Colors.BLUE_800
+    )
+    
     # Вкладка з основним функціоналом
     main_tab = ft.Tab(
-        text="Основна",
+        text=lang_manager.get_text("main_tab"),
         icon=ft.Icons.EDIT,
         content=ft.Container(
             content=ft.Column([
@@ -108,33 +197,32 @@ def main(page: ft.Page):
     
     # Вкладка з налаштуваннями
     settings_tab = ft.Tab(
-        text="Налаштування",
+        text=lang_manager.get_text("settings_tab"),
         icon=ft.Icons.SETTINGS,
         content=ft.Container(
             content=ft.Column([
                 ft.Container(height=20),
-                ft.Text(
-                    "Налаштування програми",
-                    size=20,
-                    weight=ft.FontWeight.BOLD
-                ),
+                settings_title,
                 ft.Divider(height=30),
                 ft.Row([
                     ft.Icon(ft.Icons.PALETTE, size=30),
-                    ft.Text("Тема інтерфейсу:", size=16),
+                    theme_label,
                 ], spacing=10),
                 ft.Container(height=10),
                 theme_switch,
-                ft.Container(height=30),
-                ft.Text(
-                    "Інформація про програму:",
-                    size=16,
-                    weight=ft.FontWeight.BOLD
-                ),
+                ft.Container(height=20),
+                ft.Row([
+                    ft.Icon(ft.Icons.LANGUAGE, size=30),
+                    ft.Text(lang_manager.get_text("language_interface"), size=16),
+                ], spacing=10),
                 ft.Container(height=10),
-                ft.Text("Версія: 1.0", size=14),
-                ft.Text("Автор: Combain Team", size=14),
-                ft.Text("Опис: Програма-пустишка для обробки тексту", size=14),
+                language_dropdown,
+                ft.Container(height=30),
+                app_info_title,
+                ft.Container(height=10),
+                version_text,
+                author_text,
+                description_text,
             ], 
             spacing=5,
             alignment=ft.MainAxisAlignment.START,
@@ -155,12 +243,7 @@ def main(page: ft.Page):
     # Додаємо всі елементи на сторінку
     page.add(
         ft.Column([
-            ft.Text(
-                "Combain",
-                size=28,
-                weight=ft.FontWeight.BOLD,
-                color=ft.Colors.BLUE_800
-            ),
+            app_title,
             ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
             tabs
         ], 
