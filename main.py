@@ -11,9 +11,29 @@ lang_manager = LanguageManager()
 
 def main(page: ft.Page):
     page.title = lang_manager.get_text("app_title")
-    page.window_width = 1920
-    page.window_height = 1080
+    
+    # **** Застосовуємо рекомендований порядок дій ****
+    # 1. Скидаємо стан вікна, щоб нічого не блокувало зміну розміру.
+    page.window.maximized = False
+    page.window.minimized = False
+    page.window.resizable = True
+    
+    # 2. Встановлюємо бажаний розмір через надійний Window API.
+    page.window.width = 1920
+    page.window.height = 1080
+    
+    # 3. Негайно оновлюємо сторінку, щоб застосувати всі зміни.
+    page.update()
+    # ***************************************************************
+    
     page.padding = 20
+    # ***************************************************************
+    
+    # Встановлюємо тему з конфігу
+    if lang_manager.get_theme() == "dark":
+        page.theme_mode = ft.ThemeMode.DARK
+    else:
+        page.theme_mode = ft.ThemeMode.LIGHT
     # Встановлюємо тему з конфігу
     if lang_manager.get_theme() == "dark":
         page.theme_mode = ft.ThemeMode.DARK
@@ -27,15 +47,14 @@ def main(page: ft.Page):
         color=ft.Colors.GREY_700
     )
     
-    # Поле для вводу тексту (змінено)
+    # Поле для вводу тексту (статичне, великого розміру)
     text_input = ft.TextField(
         label=lang_manager.get_text("enter_text"),
         multiline=True,
-        min_lines=15,  # Збільшено початковий розмір
+        min_lines=15,  # Встановлюємо бажану висоту в рядках
+        max_lines=15,  # Фіксуємо висоту, щоб поле не розширювалось
         border_color=ft.Colors.BLUE_400,
         focused_border_color=ft.Colors.BLUE_600,
-        expand=True,  # Дозволяє розтягуватись по висоті
-        # max_lines приберемо, щоб дозволити вільне розтягування
     )
 
     # Функція для оновлення лічильника символів
