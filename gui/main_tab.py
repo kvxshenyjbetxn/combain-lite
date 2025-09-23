@@ -1,4 +1,5 @@
 import flet as ft
+import time
 
 def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, page=None):
 
@@ -16,25 +17,21 @@ def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, pag
             "stage_montage", "stage_description", "stage_preview"
         ]
         
-        # Створюємо чекбокси з увімкненим станом за замовчуванням
         stage_checkboxes = [
             ft.Checkbox(
                 label=lang_manager.get_text(stage),
                 data=language_code,
                 on_change=on_stage_click,
-                value=True  # Чекбокси увімкнені за замовчуванням
+                value=True
             ) for stage in stages
         ]
         
-        # Об'єднуємо заголовок та чекбокси в один горизонтальний ряд
         controls_in_row = [
             ft.Text(f"{lang_manager.get_text('stages_label')} ({language_code}):", weight=ft.FontWeight.BOLD, size=14)
         ]
         controls_in_row.extend(stage_checkboxes)
 
-        # Створюємо візуально відокремлений блок для кожної мови
         return ft.Container(
-            # Вся магія тут: Row без переносу, обгорнутий у контейнер з прокруткою
             content=ft.Row(
                 controls=[
                     ft.Row(
@@ -42,24 +39,44 @@ def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, pag
                         spacing=15,
                     )
                 ],
-                # Вмикаємо горизонтальну прокрутку, якщо контент не вміщується
                 scroll=ft.ScrollMode.ADAPTIVE,
             ),
             padding=15,
             border=ft.border.all(1, ft.Colors.OUTLINE),
             border_radius=ft.border_radius.all(8),
-            margin=ft.margin.only(top=10)
+            margin=ft.margin.only(top=10),
+            
+            # Налаштування анімації прозорості
+            opacity=0, # Початковий стан: прозорий
+            animate_opacity=ft.Animation(duration=400, curve=ft.AnimationCurve.EASE_IN),
         )
 
     def update_stages_menus(e):
-        """Оновлює видимість та вміст меню етапів на основі вибраних мов."""
+        """Оновлює меню етапів з коректною анімацією появи та зникнення."""
+        # Очищуємо контейнер і знову наповнюємо його, щоб уникнути складного управління станами
         stages_main_container.controls.clear()
         for cb in language_checkboxes:
             if cb.value:
                 stages_main_container.controls.append(create_stages_menu(cb.label))
-        stages_main_container.update()
+        
+        # Якщо немає елементів, просто оновлюємо порожній контейнер
+        if not stages_main_container.controls:
+            page.update()
+            return
 
-    # Створюємо чекбокси для мов
+        # 1. Перше оновлення: додає на сторінку невидимі елементи (opacity=0)
+        page.update()
+        
+        # 2. Даємо Flet мить на обробку першого оновлення
+        time.sleep(0.05)
+        
+        # 3. Змінюємо прозорість на 1 для всіх елементів
+        for menu in stages_main_container.controls:
+            menu.opacity = 1
+        
+        # 4. Друге оновлення: запускає анімацію проявлення
+        page.update()
+
     languages = ["UA", "RO", "PL"]
     language_checkboxes = [
         ft.Checkbox(label=lang, on_change=update_stages_menus) for lang in languages
@@ -76,7 +93,6 @@ def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, pag
         on_click=submit_button.on_click if submit_button else None
     )
     
-    # Основний контент вкладки, обгорнутий в колонку з прокруткою
     tab_content = ft.Column(
         [
             ft.Text(lang_manager.get_text("main_tab_title") if lang_manager.get_text("main_tab_title") != "main_tab_title" else lang_manager.get_text("main_tab"), size=20, weight=ft.FontWeight.BOLD),
