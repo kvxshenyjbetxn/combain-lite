@@ -1,5 +1,4 @@
 import flet as ft
-from gui.gallery import GalleryDemo
 
 def get_image_tab(lang_manager, page=None):
     return ft.Tab(
@@ -10,7 +9,6 @@ def get_image_tab(lang_manager, page=None):
                 ft.Text(lang_manager.get_text("image_tab_title"), size=20, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=20),
                 #ft.Text(lang_manager.get_text("image_tab_desc"), size=14),
-                GalleryDemo(page)
             ],
             spacing=10,
             alignment=ft.MainAxisAlignment.START,

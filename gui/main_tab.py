@@ -1,5 +1,4 @@
 import flet as ft
-from gui.gallery import GalleryDemo
 
 def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, page=None):
     # Опис як на вкладці Озвучка
@@ -30,8 +29,6 @@ def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, pag
                 ft.Row([
                     main_submit_button
                 ], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Divider(height=30),
-                GalleryDemo(page)
             ],
             spacing=10,
             alignment=ft.MainAxisAlignment.START,

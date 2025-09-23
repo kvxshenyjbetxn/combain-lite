@@ -5,7 +5,6 @@ from language_manager import LanguageManager
 from gui.main_tab import get_main_tab
 from gui.settings_tab import get_settings_tab
 from gui.image_tab import get_image_tab
-from gui.voice_tab import get_voice_tab
 
 # Глобальний менеджер мов
 lang_manager = LanguageManager()
@@ -28,31 +27,22 @@ def main(page: ft.Page):
         color=ft.Colors.GREY_700
     )
     
-    # Поле для вводу тексту (динамічне)
+    # Поле для вводу тексту (змінено)
     text_input = ft.TextField(
         label=lang_manager.get_text("enter_text"),
         multiline=True,
-        min_lines=2,  # маленьке за замовчуванням
-        max_lines=18,
+        min_lines=15,  # Збільшено початковий розмір
         border_color=ft.Colors.BLUE_400,
         focused_border_color=ft.Colors.BLUE_600,
-        expand=False
+        expand=True,  # Дозволяє розтягуватись по висоті
+        # max_lines приберемо, щоб дозволити вільне розтягування
     )
-    
+
     # Функція для оновлення лічильника символів
     def update_char_count(e):
         text = text_input.value or ""
         char_counter.value = lang_manager.get_text("characters_count", len(text))
-        # Динамічно розширюємо поле, якщо є текст
-        if text.strip():
-            text_input.min_lines = 12
-            text_input.expand = True
-        else:
-            text_input.min_lines = 2
-            text_input.expand = False
-        text_input.update()
         char_counter.update()
-        # page.update() не потрібен тут
     
     # Прив'язуємо функцію до зміни тексту
     text_input.on_change = update_char_count
@@ -63,10 +53,8 @@ def main(page: ft.Page):
         print(lang_manager.get_text("submit_processing", len(text)))
         # Тут можна додати будь-яку логіку обробки
 
-        # Очищаємо поле і повертаємо до малого розміру
+        # Очищаємо поле
         text_input.value = ""
-        text_input.min_lines = 2
-        text_input.expand = False
         text_input.update()
         char_counter.value = lang_manager.get_text("characters_count", 0)
         char_counter.update()
@@ -168,7 +156,6 @@ def main(page: ft.Page):
         # Оновлюємо вкладки
         main_tab.text = lang_manager.get_text("main_tab")
         image_tab.text = lang_manager.get_text("image_tab")
-        voice_tab.text = lang_manager.get_text("voice_tab")
         settings_tab.text = lang_manager.get_text("settings_tab")
 
         # Оновлюємо тексти в налаштуваннях
@@ -227,14 +214,12 @@ def main(page: ft.Page):
     )
     # Вкладка генерації зображень
     image_tab = get_image_tab(lang_manager, page)
-    # Вкладка озвучки
-    voice_tab = get_voice_tab(lang_manager)
-    
+
     # Створюємо tabs
     tabs = ft.Tabs(
         selected_index=0,
         animation_duration=300,
-        tabs=[main_tab, image_tab, voice_tab, settings_tab],
+        tabs=[main_tab, image_tab, settings_tab],
         expand=True
     )
     
