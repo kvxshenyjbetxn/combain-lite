@@ -22,5 +22,14 @@
   "voice_tab": "Озвучка",
   "voice_tab_title": "Озвучка текста",
   "main_tab_title": "Обработка текста",
-  "restart_required": "Необходимо перезапустить программу для полного применения нового языка."
+  "restart_required": "Необходимо перезапустить программу для полного применения нового языка.",
+  "translation_languages_label": "Языки для перевода:",
+  "stages_label": "Этапы для работы:",
+  "stage_translation": "Перевод",
+  "stage_images": "Картинки",
+  "stage_voiceover": "Озвучка",
+  "stage_subtitles": "Субтитры",
+  "stage_montage": "Монтаж",
+  "stage_description": "Описание",
+  "stage_preview": "Превью"
 }

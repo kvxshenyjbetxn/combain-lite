@@ -8,7 +8,7 @@
   "submit_message": "Text submitted for processing! ({0} characters)",
   "submit_ok": "OK",
   "dark_theme": "Dark theme",
-  "light_theme": "Light theme", 
+  "light_theme": "Light theme",
   "settings_title": "Application settings",
   "theme_interface": "Interface theme:",
   "language_interface": "Interface language:",
@@ -22,5 +22,14 @@
   "voice_tab": "Voice Synthesis",
   "voice_tab_title": "Voice Synthesis",
   "main_tab_title": "Text Processing",
-  "restart_required": "You need to restart the application to fully apply the new language."
+  "restart_required": "You need to restart the application to fully apply the new language.",
+  "translation_languages_label": "Languages for translation:",
+  "stages_label": "Stages for work:",
+  "stage_translation": "Translation",
+  "stage_images": "Images",
+  "stage_voiceover": "Voiceover",
+  "stage_subtitles": "Subtitles",
+  "stage_montage": "Montage",
+  "stage_description": "Description",
+  "stage_preview": "Preview"
 }

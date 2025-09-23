@@ -1,7 +1,7 @@
 {
   "app_title": "Combain",
   "main_tab": "Основна",
-  "settings_tab": "Налаштування", 
+  "settings_tab": "Налаштування",
   "enter_text": "Введіть текст",
   "characters_count": "Символів: {0}",
   "submit_button": "Відправити на обробку",
@@ -22,5 +22,14 @@
   "voice_tab": "Озвучка",
   "voice_tab_title": "Озвучка тексту",
   "main_tab_title": "Обробка тексту",
-  "restart_required": "Потрібно перезапустити програму для повного застосування мови."
+  "restart_required": "Потрібно перезапустити програму для повного застосування мови.",
+  "translation_languages_label": "Мови для перекладу:",
+  "stages_label": "Етапи для роботи:",
+  "stage_translation": "Переклад",
+  "stage_images": "Картинки",
+  "stage_voiceover": "Озвучка",
+  "stage_subtitles": "Субтитри",
+  "stage_montage": "Монтаж",
+  "stage_description": "Опис",
+  "stage_preview": "Превью"
 }
