@@ -96,7 +96,6 @@ def get_image_tab(lang_manager, page=None):
                         height=180,
                         bgcolor=ft.Colors.SURFACE_VARIANT,
                         border_radius=ft.border_radius.all(8),
-                        border=ft.border.all(1, ft.Colors.OUTLINE),
                         on_click=show_placeholder_dialog
                     )
                 
@@ -204,7 +203,7 @@ def get_image_tab(lang_manager, page=None):
                 ft.Divider(height=10),
                 ft.Row([add_button, clear_button], spacing=10),
                 ft.Divider(height=10),
-                ft.Container(content=gallery_container, expand=True, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(8), padding=10)
+                ft.Container(content=gallery_container, expand=True, border_radius=ft.border_radius.all(8), padding=10)
             ], spacing=10, alignment=ft.MainAxisAlignment.START, expand=True),
             padding=20
         )
