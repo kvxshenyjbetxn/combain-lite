@@ -169,33 +169,131 @@ def get_image_tab(lang_manager, page=None):
             page.update()
     
     def show_image_dialog(image_path):
-        """Показує діалог з великим зображенням"""
+        """Показує зображення на весь розмір інтерфейсу"""
         if not page:
             return
+        
+        # Отримуємо розміри вікна (з урахуванням padding)
+        window_width = page.window.width - 40  # Віднімаємо padding
+        window_height = page.window.height - 100  # Віднімаємо padding та место для кнопки
+        
+        # Кнопка закриття
+        close_button = ft.IconButton(
+            icon=ft.Icons.CLOSE,
+            icon_color=ft.Colors.WHITE,
+            icon_size=30,
+            bgcolor=ft.Colors.BLACK54,
+            tooltip="Закрити (ESC)",
+            on_click=lambda e: close_image_viewer()
+        )
+        
+        # Кнопка масштабування
+        zoom_button = ft.IconButton(
+            icon=ft.Icons.ZOOM_IN,
+            icon_color=ft.Colors.WHITE,
+            icon_size=25,
+            bgcolor=ft.Colors.BLACK54,
+            tooltip="Оригінальний розмір",
+            on_click=lambda e: toggle_zoom()
+        )
+        
+        # Стан масштабування
+        is_zoomed = False
+        
+        def toggle_zoom():
+            nonlocal is_zoomed
+            if is_zoomed:
+                # Повертаємо до підганяння під розмір
+                image_widget.fit = ft.ImageFit.CONTAIN
+                image_widget.width = window_width - 20
+                image_widget.height = window_height - 60
+                zoom_button.icon = ft.Icons.ZOOM_IN
+                zoom_button.tooltip = "Оригінальний розмір"
+                is_zoomed = False
+            else:
+                # Показуємо в оригінальному розмірі
+                image_widget.fit = ft.ImageFit.NONE
+                image_widget.width = None
+                image_widget.height = None
+                zoom_button.icon = ft.Icons.ZOOM_OUT
+                zoom_button.tooltip = "Підганяти під розмір"
+                is_zoomed = True
             
+            page.update()
+        
+        # Зображення
+        image_widget = ft.Image(
+            src=image_path,
+            width=window_width - 20,
+            height=window_height - 60,
+            fit=ft.ImageFit.CONTAIN,
+        )
+        
+        # Контейнер з прокруткою для великих зображень
+        scrollable_image = ft.Container(
+            content=image_widget,
+            width=window_width - 20,
+            height=window_height - 60,
+            alignment=ft.alignment.center,
+        )
+        
+        # Панель управління
+        control_panel = ft.Row([
+            ft.Container(expand=True),  # Пустий простір зліва
+            zoom_button,
+            ft.Container(width=10),  # Відстань між кнопками
+            close_button,
+        ], 
+        height=50,
+        alignment=ft.MainAxisAlignment.END)
+        
+        # Головний контейнер
+        viewer_container = ft.Container(
+            content=ft.Column([
+                control_panel,
+                ft.Container(
+                    content=scrollable_image,
+                    expand=True,
+                    padding=ft.padding.all(10)
+                )
+            ], 
+            spacing=0,
+            expand=True),
+            width=window_width,
+            height=window_height,
+            bgcolor=ft.Colors.BLACK87,
+            border_radius=ft.border_radius.all(10),
+            padding=ft.padding.all(10)
+        )
+        
+        # Створюємо повноекранний діалог
         dialog = ft.AlertDialog(
             modal=True,
-            content=ft.Container(
-                content=ft.Image(
-                    src=image_path,
-                    width=600,
-                    height=600,
-                    fit=ft.ImageFit.CONTAIN
-                ),
-                width=600,
-                height=600
-            ),
-            actions=[
-                ft.TextButton(
-                    text="Закрити",
-                    on_click=lambda e: close_dialog(dialog)
-                )
-            ]
+            content=viewer_container,
+            content_padding=ft.padding.all(0),
+            actions=[],  # Прибираємо стандартні actions
+            actions_padding=ft.padding.all(0),
+            title_padding=ft.padding.all(0),
+            inset_padding=ft.padding.all(20),  # Відступ від країв екрану
         )
+        
+        def close_image_viewer():
+            """Закриває переглядач зображень"""
+            dialog.open = False
+            page.update()
+            page.overlay.remove(dialog)
+        
+        # Обробка клавіш (ESC для закриття)
+        def on_keyboard(e: ft.KeyboardEvent):
+            if e.key == "Escape":
+                close_image_viewer()
+        
+        page.on_keyboard_event = on_keyboard
         
         page.overlay.append(dialog)
         dialog.open = True
         page.update()
+
     
     def show_placeholder_dialog():
         """Показує діалог з інформацією про відсутність зображень"""
