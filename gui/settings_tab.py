@@ -1,6 +1,6 @@
 import flet as ft
 
-def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, language_dropdown, language_hint, app_info_title, version_text, author_text, description_text, on_logout=None):
+def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, language_dropdown, language_hint, app_info_title, version_text, author_text, description_text, on_logout=None, results_path_input=None, on_browse_click=None):
     return ft.Tab(
         text=lang_manager.get_text("settings_tab"),
         icon=ft.Icons.SETTINGS,
@@ -23,6 +23,16 @@ def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, la
                 ft.Container(height=10),
                 language_dropdown,
                 language_hint,
+                ft.Container(height=20),
+                ft.Row([
+                    ft.Icon(ft.Icons.FOLDER_OPEN, size=30),
+                    ft.Text(lang_manager.get_text("results_path_label"), size=16),
+                ], spacing=10),
+                ft.Container(height=10),
+                ft.Row([
+                    results_path_input,
+                    ft.ElevatedButton(lang_manager.get_text("browse_button"), icon=ft.Icons.FOLDER_OPEN, on_click=on_browse_click)
+                ]),
                 ft.Container(height=30),
                 app_info_title,
                 ft.Container(height=10),
@@ -31,12 +41,12 @@ def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, la
                 description_text,
                 ft.Container(height=30),
                 ft.ElevatedButton(
-                text="Вийти з акаунту",
-                icon=ft.Icons.LOGOUT,  # ft.icons -> ft.Icons
-                on_click=on_logout,
-                bgcolor=ft.Colors.RED_ACCENT_700,  # ft.colors -> ft.Colors
-                color=ft.Colors.WHITE  # ft.colors -> ft.Colors
-            ),
+                    text=lang_manager.get_text("logout_button"),
+                    icon=ft.Icons.LOGOUT,
+                    on_click=on_logout,
+                    bgcolor=ft.Colors.RED_ACCENT_700,
+                    color=ft.Colors.WHITE
+                ),
             ], 
             spacing=5,
             alignment=ft.MainAxisAlignment.START,

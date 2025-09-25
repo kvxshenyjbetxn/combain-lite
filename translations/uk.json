@@ -55,5 +55,12 @@
   "submit_queue_button": "Відправити чергу на обробку",
   "delete_from_queue_tooltip": "Видалити завдання з черги",
   "submission_queue_title": "Черга на відправку:",
-  "queue_sent_message": "Чергу з {0} завдань відправлено на сервер!"
+  "queue_sent_message": "Чергу з {0} завдань відправлено на сервер!",
+  "results_path_label": "Шлях для збереження результатів:",
+  "browse_button": "Огляд",
+  "task_completed": "Завершено",
+  "task_processing": "В обробці...",
+  "task_new": "Нове",
+  "task_error": "Помилка",
+  "logout_button": "Вийти з акаунту"
 }

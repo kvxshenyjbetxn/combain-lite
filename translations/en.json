@@ -55,5 +55,12 @@
   "submit_queue_button": "Submit Queue for Processing",
   "delete_from_queue_tooltip": "Remove task from queue",
   "submission_queue_title": "Submission Queue:",
-  "queue_sent_message": "Queue of {0} tasks has been sent to the server!"
+  "queue_sent_message": "Queue of {0} tasks has been sent to the server!",
+  "results_path_label": "Path to save results:",
+  "browse_button": "Browse",
+  "task_completed": "Completed",
+  "task_processing": "Processing...",
+  "task_new": "New",
+  "task_error": "Error",
+  "logout_button": "Logout"
 }

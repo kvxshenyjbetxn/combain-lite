@@ -55,5 +55,12 @@
   "submit_queue_button": "Отправить очередь на обработку",
   "delete_from_queue_tooltip": "Удалить задачу из очереди",
   "submission_queue_title": "Очередь на отправку:",
-  "queue_sent_message": "Очередь из {0} задач отправлена на сервер!"
+  "queue_sent_message": "Очередь из {0} задач отправлена на сервер!",
+  "results_path_label": "Путь для сохранения результатов:",
+  "browse_button": "Обзор",
+  "task_completed": "Завершено",
+  "task_processing": "В обработке...",
+  "task_new": "Новое",
+  "task_error": "Ошибка",
+  "logout_button": "Выйти"
 }

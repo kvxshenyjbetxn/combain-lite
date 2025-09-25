@@ -9,6 +9,7 @@ class LanguageManager:
         self.config_file = os.path.join(base_dir, "config.json")
         self.current_language = "uk"  # За замовчуванням українська
         self.theme = "light"  # За замовчуванням світла тема
+        self.results_path = "" # Шлях для збереження результатів
         self.translations = {}
         self.available_languages = {
             "uk": "Українська",
@@ -27,15 +28,26 @@ class LanguageManager:
                     config = json.load(file)
                     self.current_language = config.get('language', 'uk')
                     self.theme = config.get('theme', 'light')
+                    # Завантажуємо шлях для результатів, або створюємо стандартний
+                    self.results_path = config.get('results_path', os.path.join(os.path.expanduser('~'), 'combain_results'))
+            else:
+                # Якщо конфіг файлу немає, створюємо стандартний шлях
+                self.results_path = os.path.join(os.path.expanduser('~'), 'combain_results')
+
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Помилка завантаження конфігурації: {e}")
             self.current_language = "uk"
             self.theme = "light"
+            self.results_path = os.path.join(os.path.expanduser('~'), 'combain_results')
     
     def save_config(self):
         """Зберігає поточну конфігурацію в файл"""
         try:
-            config = {"language": self.current_language, "theme": self.theme}
+            config = {
+                "language": self.current_language, 
+                "theme": self.theme,
+                "results_path": self.results_path
+            }
             with open(self.config_file, 'w', encoding='utf-8') as file:
                 json.dump(config, file, ensure_ascii=False, indent=2)
         except Exception as e:
@@ -50,6 +62,15 @@ class LanguageManager:
 
     def get_theme(self) -> str:
         return self.theme
+
+    def set_results_path(self, path: str):
+        """Встановлює та зберігає новий шлях для результатів."""
+        self.results_path = path
+        self.save_config()
+
+    def get_results_path(self) -> str:
+        """Повертає поточний шлях для збереження результатів."""
+        return self.results_path
     
     def load_language(self, language_code: str) -> bool:
         """Завантажує переклад для вказаної мови"""
