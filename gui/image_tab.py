@@ -17,7 +17,9 @@ def get_image_tab(lang_manager, page=None):
                 page.overlay.remove(dialog)
 
     def add_image_for_language(language_code: str):
-        image_folder = os.path.join(os.getcwd(), "image")
+        # Визначаємо шлях до кореневої папки проекту (на один рівень вище від папки 'gui')
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        image_folder = os.path.join(project_root, "image")
         if not os.path.exists(image_folder): os.makedirs(image_folder)
         
         image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
@@ -44,7 +46,10 @@ def get_image_tab(lang_manager, page=None):
             if lang in gallery_data and 0 <= image_index < len(gallery_data[lang]):
                 del gallery_data[lang][image_index]
             
-            image_folder = os.path.join(os.getcwd(), "image")
+            # Визначаємо шлях до кореневої папки проекту (на один рівень вище від папки 'gui')
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            image_folder = os.path.join(project_root, "image")
+
             image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
             image_path = random.choice(image_files) if image_files else None
             if lang not in gallery_data:
@@ -94,7 +99,7 @@ def get_image_tab(lang_manager, page=None):
                             ft.Text("Demo Image", size=14, color=ft.Colors.ON_SURFACE_VARIANT)
                         ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                         height=180,
-                        bgcolor=ft.Colors.SURFACE_VARIANT,
+                        bgcolor="surfaceVariant",
                         border_radius=ft.border_radius.all(8),
                         on_click=show_placeholder_dialog
                     )

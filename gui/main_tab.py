@@ -1,17 +1,14 @@
 import flet as ft
 import time
 
-def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, page=None):
+def get_main_tab(lang_manager, char_counter, text_input, page=None):
 
-    # Контейнер для динамічного додавання меню етапів
     stages_main_container = ft.Column()
 
     def on_stage_click(e):
-        # Функція-заглушка для обробки кліку по етапу
         print(f"Етап '{e.control.label}' для мови '{e.control.data}' змінено на: {e.control.value}")
 
     def create_stages_menu(language_code):
-        """Створює СУВОРО ГОРИЗОНТАЛЬНЕ меню етапів для вказаної мови."""
         stages = [
             "stage_translation", "stage_images", "stage_voiceover", "stage_subtitles",
             "stage_montage", "stage_description", "stage_preview"
@@ -45,44 +42,70 @@ def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, pag
             border=ft.border.all(1, ft.Colors.OUTLINE),
             border_radius=ft.border_radius.all(8),
             margin=ft.margin.only(top=10),
-            
-            # Налаштування анімації прозорості
-            opacity=0, # Початковий стан: прозорий
+            opacity=0,
             animate_opacity=ft.Animation(duration=400, curve=ft.AnimationCurve.EASE_IN),
         )
 
-    def update_stages_menus(e):
-        """Оновлює меню етапів з коректною анімацією появи та зникнення."""
-        # Очищуємо контейнер і знову наповнюємо його, щоб уникнути складного управління станами
-        stages_main_container.controls.clear()
-        for cb in language_checkboxes:
-            if cb.value:
-                stages_main_container.controls.append(create_stages_menu(cb.label))
+    def update_ui_elements(e=None):
+        """Оновлює меню етапів та стан кнопки відправки."""
+        selected_languages = [cb.label for cb in language_checkboxes if cb.value]
         
-        # Якщо немає елементів, просто оновлюємо порожній контейнер
+        # Анімація зникнення
+        for menu in stages_main_container.controls:
+            menu.opacity = 0
+        if page: page.update()
+        time.sleep(0.4)
+
+        stages_main_container.controls.clear()
+        for lang_code in selected_languages:
+            stages_main_container.controls.append(create_stages_menu(lang_code))
+
         if not stages_main_container.controls:
-            page.update()
+            if page: page.update()
+        else:
+            if page: page.update()
+            time.sleep(0.05)
+            for menu in stages_main_container.controls:
+                menu.opacity = 1
+            if page: page.update()
+        
+        main_submit_button.disabled = not any(cb.value for cb in language_checkboxes)
+        if page: page.update()
+
+    def on_submit_click(e):
+        text = text_input.value or ""
+        selected_languages = [cb.label for cb in language_checkboxes if cb.value]
+
+        if not text.strip() or not selected_languages:
             return
 
-        # 1. Перше оновлення: додає на сторінку невидимі елементи (opacity=0)
-        page.update()
+        print(f"Відправлено на обробку: '{text}' для мов: {selected_languages}")
+
+        # Скидання стану
+        text_input.value = ""
+        for cb in language_checkboxes:
+            cb.value = False
         
-        # 2. Даємо Flet мить на обробку першого оновлення
-        time.sleep(0.05)
+        update_ui_elements()
+        text_input.update()
         
-        # 3. Змінюємо прозорість на 1 для всіх елементів
-        for menu in stages_main_container.controls:
-            menu.opacity = 1
-        
-        # 4. Друге оновлення: запускає анімацію проявлення
+        char_counter.value = lang_manager.get_text("characters_count", 0)
+        char_counter.update()
+
+        snack_bar = ft.SnackBar(
+            content=ft.Text(lang_manager.get_text("submit_message", len(text))),
+            action=lang_manager.get_text("submit_ok"),
+        )
+        page.overlay.append(snack_bar)
+        snack_bar.open = True
         page.update()
 
-    languages = ["UA", "RO", "PL"]
+    languages = ["FR", "EN", "RU", "PT", "ES", "IT", "UA"]
     language_checkboxes = [
-        ft.Checkbox(label=lang, on_change=update_stages_menus) for lang in languages
+        ft.Checkbox(label=lang, on_change=update_ui_elements) for lang in languages
     ]
-    languages_row = ft.Row(controls=language_checkboxes)
-    
+    languages_row = ft.Row(controls=language_checkboxes, scroll=ft.ScrollMode.ADAPTIVE)
+
     main_submit_button = ft.ElevatedButton(
         text=lang_manager.get_text("submit_button"),
         icon=ft.Icons.SEND,
@@ -90,7 +113,8 @@ def get_main_tab(lang_manager, char_counter, text_input, submit_button=None, pag
         color=ft.Colors.WHITE,
         width=240,
         height=50,
-        on_click=submit_button.on_click if submit_button else None
+        on_click=on_submit_click,
+        disabled=True
     )
     
     tab_content = ft.Column(

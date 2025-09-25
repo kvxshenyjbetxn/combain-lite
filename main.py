@@ -65,39 +65,7 @@ def main(page: ft.Page):
     
     # Прив'язуємо функцію до зміни тексту
     text_input.on_change = update_char_count
-    
-    # Функція для кнопки відправки
-    def on_submit_click(e):
-        text = text_input.value or ""
-        print(lang_manager.get_text("submit_processing", len(text)))
-        # Тут можна додати будь-яку логіку обробки
 
-        # Очищаємо поле
-        text_input.value = ""
-        text_input.update()
-        char_counter.value = lang_manager.get_text("characters_count", 0)
-        char_counter.update()
-
-        # Створюємо snack bar та додаємо його на сторінку
-        snack_bar = ft.SnackBar(
-            content=ft.Text(lang_manager.get_text("submit_message", len(text))),
-            action=lang_manager.get_text("submit_ok"),
-            action_color=ft.Colors.BLUE
-        )
-        page.overlay.append(snack_bar)
-        snack_bar.open = True
-        page.update()
-    
-    # Кнопка відправки
-    submit_button = ft.ElevatedButton(
-        text=lang_manager.get_text("submit_button"),
-        icon=ft.Icons.SEND,
-        on_click=on_submit_click,
-        bgcolor=ft.Colors.BLUE_400,
-        color=ft.Colors.WHITE,
-        width=200,
-        height=40
-    )
     
     # Функція для зміни теми
     def change_theme(e):
@@ -160,9 +128,6 @@ def main(page: ft.Page):
         # Оновлюємо поле введення
         text_input.label = lang_manager.get_text("enter_text")
 
-        # Оновлюємо кнопку відправки
-        submit_button.text = lang_manager.get_text("submit_button")
-
         # Оновлюємо кнопку теми
         if page.theme_mode == ft.ThemeMode.LIGHT:
             theme_switch.text = lang_manager.get_text("dark_theme")
@@ -217,7 +182,7 @@ def main(page: ft.Page):
     )
     
     # Вкладка з основним функціоналом
-    main_tab = get_main_tab(lang_manager, char_counter, text_input, submit_button, page)
+    main_tab = get_main_tab(lang_manager, char_counter, text_input, page)
     # Вкладка з налаштуваннями
     settings_tab = get_settings_tab(
         lang_manager,
