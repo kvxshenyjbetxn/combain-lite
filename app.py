@@ -1,7 +1,7 @@
 import flet as ft
-from gui.auth_view import get_auth_view, AUTH_CACHE_FILE # Імпортуємо назву файлу
+from gui.auth_view import get_auth_view, AUTH_CACHE_FILE
 from main import build_main_view
-from firebase_auth import auth # Імпортуємо auth для авто-входу
+from firebase_auth import auth, stream_manager
 import json
 import os
 
@@ -26,20 +26,20 @@ def main(page: ft.Page):
         
     def logout(e=None):
       """Функція виходу з акаунту."""
-      # Шлях до файлу кешу
+      print("Вихід з акаунту. Зупиняю потік Firebase...")
+      stream_manager.close_stream()
+      
       cache_file = AUTH_CACHE_FILE
-      # Видаляємо файл, якщо він існує
       if os.path.exists(cache_file):
           os.remove(cache_file)
           print("Кеш авторизації очищено.")
-      # Показуємо екран входу
+      
       show_login_screen()
 
     # --- ЛОГІКА АВТОМАТИЧНОГО ВХОДУ ---
     def try_auto_login():
         """Спроба автоматичного входу при запуску програми."""
         if not os.path.exists(AUTH_CACHE_FILE):
-            # Якщо файлу немає, просто показуємо екран входу
             show_login_screen()
             return
 
@@ -51,19 +51,15 @@ def main(page: ft.Page):
 
                 if email and password:
                     print(f"Знайдено збережені дані для {email}. Спроба автоматичного входу...")
-                    # Намагаємося увійти з цими даними
                     user = auth.sign_in_with_email_and_password(email, password)
-                    # Якщо успішно - викликаємо головну функцію
                     on_login_success(user)
                 else:
                     show_login_screen()
             
         except Exception as e:
-            # Якщо сталася помилка (напр., неправильний пароль), просто показуємо екран входу
             print(f"Помилка автоматичного входу: {e}")
             show_login_screen()
     
-    # Запускаємо спробу автоматичного входу
     try_auto_login()
 
 if __name__ == "__main__":

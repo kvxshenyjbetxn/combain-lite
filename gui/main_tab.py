@@ -4,6 +4,8 @@ from collections import defaultdict
 import uuid
 import os
 
+from firebase_auth import stream_manager
+
 # Словник для зберігання завдань, відправлених на сервер
 submitted_tasks = {}
 
@@ -18,7 +20,7 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
             card_control = submitted_tasks[task_id]['card_control']
             
             # Оновлюємо статус в UI
-            status_indicator = card_control.controls[0].content.controls[0].controls[0].controls[1]
+            status_indicator = card_control.controls[0].content.controls[0].controls[0].content.controls[1]
             status_text = new_data.get('status', 'unknown')
             
             status_map = {
@@ -40,15 +42,30 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
 
     # --- Функція для збереження результатів ---
     def save_task_results(task_id, task_data):
+        print("\n--- ДІАГНОСТИКА ЗБЕРЕЖЕННЯ ---")
+        print(f"Завдання ID: {task_id}")
+        print(f"Отриманий статус: {task_data.get('status')}")
+
         if task_data.get('status') != 'completed_translation':
+            print("Статус не 'completed_translation'. Збереження пропущено.")
+            print("--- КІНЕЦЬ ДІАГНОСТИКИ ---\n")
             return
-            
+        
+        print("Статус коректний. Починаю спробу збереження...")
         results_path = lang_manager.get_results_path()
         task_title = task_data.get('title', f'task_{task_id}')
+        print(f"Шлях для збереження: {results_path}")
         
-        for lang, stages in task_data.get("selected_stages", {}).items():
+        selected_stages = task_data.get("selected_stages", {})
+        if not selected_stages:
+            print("Помилка: блок 'selected_stages' відсутній в даних.")
+        
+        for lang, stages in selected_stages.items():
+            print(f"  - Перевірка мови: {lang}")
             translated_text = stages.get('translated_text')
+            
             if translated_text:
+                print(f"    > Знайдено перекладений текст! Спроба зберегти файл...")
                 try:
                     lang_folder = os.path.join(results_path, lang)
                     os.makedirs(lang_folder, exist_ok=True)
@@ -58,10 +75,14 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
                     
                     with open(file_path, 'w', encoding='utf-8') as f:
                         f.write(translated_text)
-                    print(f"Результат для '{task_title}' ({lang}) збережено в {file_path}")
+                    print(f"    > УСПІХ: Результат для '{task_title}' ({lang}) збережено в {file_path}")
                         
                 except Exception as e:
-                    print(f"Помилка збереження файлу для {lang}: {e}")
+                    print(f"    > ПОМИЛКА: Не вдалося зберегти файл для {lang}: {e}")
+            else:
+                print(f"    > Текст для перекладу для мови '{lang}' не знайдено (translated_text is None or empty).")
+        
+        print("--- КІНЕЦЬ ДІАГНОСТИКИ ---\n")
 
     # --- Створюємо глобальний слухач для всіх завдань користувача ---
     if user_data and db:
@@ -69,21 +90,48 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         tasks_ref = db.child("tasks").child(user_id)
 
         def firebase_stream_handler(message):
-            if message["event"] in ["put", "patch"]:
-                if message["path"] == "/": 
-                    if message["data"]:
-                        for task_id, task_data in message["data"].items():
-                            if task_id in submitted_tasks:
-                                submitted_tasks[task_id]['data'] = task_data
-                                update_task_card_ui(task_id, task_data)
-                else: 
-                    task_id = message["path"].strip("/")
-                    task_data = message["data"]
-                    if task_id in submitted_tasks:
-                        submitted_tasks[task_id]['data'].update(task_data)
-                        update_task_card_ui(task_id, submitted_tasks[task_id]['data'])
+            # Реагуємо тільки на подію 'patch', яка несе оновлення
+            if message["event"] != "patch" or not message.get("data"):
+                return
 
-        tasks_ref.stream(firebase_stream_handler)
+            path = message["path"]
+            data = message["data"]
+            
+            # Визначаємо ID завдання з шляху
+            path_parts = path.strip("/").split("/")
+            if not path_parts:
+                return
+            task_id = path_parts[0]
+
+            if not task_id or task_id not in submitted_tasks:
+                return
+            
+            print(f"Отримано patch-оновлення для завдання {task_id}. Шлях: '{path}', Дані: {data}")
+
+            # Отримуємо поточну локальну копію даних
+            current_task_data = submitted_tasks[task_id]['data']
+
+            # Беремо шлях ОПІСЛЯ ID завдання
+            keys = path_parts[1:]
+            
+            # Якщо шлях порожній, оновлюємо корінь завдання
+            if not keys:
+                current_task_data.update(data)
+            else:
+                # Інакше, йдемо по вкладеному шляху
+                target_dict = current_task_data
+                for key in keys[:-1]:
+                    target_dict = target_dict.setdefault(key, {})
+                # Оновлюємо фінальний словник новими даними
+                # Це може бути як один ключ, так і декілька (напр. status і text)
+                target_dict[keys[-1]].update(data)
+
+            # Зберігаємо оновлені дані та оновлюємо UI
+            submitted_tasks[task_id]['data'] = current_task_data
+            update_task_card_ui(task_id, current_task_data)
+
+
+        stream_manager.start_stream(tasks_ref, firebase_stream_handler)
 
     stages_main_container = ft.Column()
     stages_state = defaultdict(lambda: {
