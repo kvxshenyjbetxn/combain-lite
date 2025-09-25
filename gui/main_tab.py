@@ -5,22 +5,27 @@ import uuid
 
 def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=None, user_data=None, db=None):
 
-    stages_main_container = ft.Column()
+    local_tasks_queue = []
     tasks_container = ft.ResponsiveRow(spacing=10, run_spacing=10)
+    
+    stages_main_container = ft.Column()
     task_counter = 1
-
     stages_state = defaultdict(lambda: {
-        "video_title": "",
-        "stage_translation": True, "stage_images": True, "stage_voiceover": True,
-        "stage_subtitles": True, "stage_montage": True, "stage_description": True,
-        "stage_preview": True
+        "video_title": "", "stage_translation": True, "stage_images": True, "stage_voiceover": True,
+        "stage_subtitles": True, "stage_montage": True, "stage_description": True, "stage_preview": True
     })
-
+    
     def delete_card_directly(e):
-        card_to_delete = e.control.data
+        card_to_delete = e.control.data['card_control']
+        task_data_to_delete = e.control.data['task_data']
+        
         if card_to_delete in tasks_container.controls:
             tasks_container.controls.remove(card_to_delete)
-            page.update()
+        if task_data_to_delete in local_tasks_queue:
+            local_tasks_queue.remove(task_data_to_delete)
+        
+        main_submit_button.disabled = not local_tasks_queue
+        page.update()
 
     def on_stage_click(e):
         lang, stage_key = e.control.data["lang"], e.control.data["stage"]
@@ -46,6 +51,10 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
 
     def update_ui_elements(e=None):
         selected_languages = [cb.label for cb in language_checkboxes if cb.value]
+        text_present = bool(text_input.value)
+
+        add_to_queue_button.disabled = not (selected_languages and text_present)
+
         for menu in stages_main_container.controls: menu.opacity = 0
         if page: page.update()
         time.sleep(0.4)
@@ -54,10 +63,9 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         if page: page.update()
         time.sleep(0.05)
         for menu in stages_main_container.controls: menu.opacity = 1
-        main_submit_button.disabled = not any(cb.value for cb in language_checkboxes)
         if page: page.update()
 
-    def create_task_card(title, languages_with_stages):
+    def create_task_card(title, languages_with_stages, task_data_ref):
         content_column = ft.Column(spacing=15, visible=False)
         for lang, data in languages_with_stages.items():
             translated_title = data.get("video_title", "").strip() or f"{lang} {title}"
@@ -69,7 +77,7 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
                     ft.Container(content=ft.Column([
                         ft.Row([ft.Text(f"{lang_manager.get_text('translated_video_title_label')}:", weight=ft.FontWeight.BOLD), ft.Text(f'"{translated_title}"')]),
                         ft.Divider(height=8, thickness=0.5),
-                        ft.Text("Вибрані етапи:", italic=True, size=12),
+                        ft.Text(lang_manager.get_text("stages_label"), italic=True, size=12),
                         stages_list
                     ]), padding=ft.padding.only(left=10))
                 ]))
@@ -86,9 +94,10 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         delete_button = ft.IconButton(
             icon=ft.Icons.DELETE_FOREVER,
             icon_color=ft.Colors.RED_500,
-            tooltip="Видалити завдання",
+            # ВИПРАВЛЕНО
+            tooltip=lang_manager.get_text("delete_from_queue_tooltip"),
             on_click=delete_card_directly,
-            data=final_card_column
+            data={'card_control': final_card_column, 'task_data': task_data_ref}
         )
         
         header_row = ft.Row(
@@ -118,72 +127,86 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         card_container.border_radius = ft.border_radius.all(8)
         
         return final_card_column
-
-    def on_submit_click(e):
-        # ***** ВИПРАВЛЕНО ТУТ *****
-        # nonlocal має бути на самому початку функції
+    
+    def add_to_queue_click(e):
         nonlocal task_counter
-
-        if not user_data or not db:
-            print("Помилка: користувач не автентифікований або немає підключення до БД.")
-            return
-
         text_to_process = text_input.value or ""
         selected_languages = [cb.label for cb in language_checkboxes if cb.value]
-
         if not selected_languages or not text_to_process:
             return
 
-        task_id = str(uuid.uuid4())
-        user_id = user_data['localId']
         title = card_title_input.value.strip() or f"Завдання {task_counter}"
+        if not card_title_input.value.strip(): task_counter += 1
 
-        task_data_for_firebase = {
-            "userId": user_id,
+        task_data = {
+            "userId": user_data['localId'],
             "original_text": text_to_process,
             "title": title,
             "selected_stages": {lang: stages_state.get(lang, {}) for lang in selected_languages},
             "status": "new",
             "created_at": int(time.time())
         }
-        
-        try:
-            db.child("tasks").child(user_id).child(task_id).set(task_data_for_firebase)
+        local_tasks_queue.append(task_data)
+        task_data_for_card = {lang: stages_state[lang] for lang in selected_languages}
+        tasks_container.controls.insert(0, create_task_card(title, task_data_for_card, task_data))
+        main_submit_button.disabled = False
+        text_input.value, card_title_input.value = "", ""
+        for cb in language_checkboxes: cb.value = False
+        stages_state.clear()
+        update_ui_elements()
+        if page:
+            text_input.update()
+            card_title_input.update()
+            char_counter.value = lang_manager.get_text("characters_count", 0)
+            char_counter.update()
+    
+    def on_submit_click(e):
+        if not user_data or not db or not local_tasks_queue:
+            return
 
-            if not card_title_input.value.strip(): task_counter += 1
-            
-            task_data_for_card = {lang: stages_state[lang] for lang in selected_languages}
-            tasks_container.controls.insert(0, create_task_card(title, task_data_for_card))
+        for task_data in local_tasks_queue:
+            try:
+                task_id = str(uuid.uuid4())
+                user_id = task_data['userId']
+                db.child("tasks").child(user_id).child(task_id).set(task_data)
+            except Exception as ex:
+                print(f"Помилка відправки завдання '{task_data['title']}' в Firebase: {ex}")
 
-            text_input.value, card_title_input.value = "", ""
-            for cb in language_checkboxes: cb.value = False
-            stages_state.clear()
-            
-            update_ui_elements()
-            if page:
-                text_input.update()
-                card_title_input.update()
-                char_counter.value = lang_manager.get_text("characters_count", 0)
-                char_counter.update()
-
-            snack_bar = ft.SnackBar(content=ft.Text(f"Завдання '{title}' відправлено на сервер!"))
-            if page:
-                page.overlay.append(snack_bar)
-                snack_bar.open = True
-                page.update()
-
-        except Exception as ex:
-            print(f"Помилка відправки даних в Firebase: {ex}")
-            snack_bar = ft.SnackBar(content=ft.Text("Помилка: не вдалося відправити завдання."))
-            if page:
-                page.overlay.append(snack_bar)
-                snack_bar.open = True
-                page.update()
+        # ВИПРАВЛЕНО
+        snack_bar = ft.SnackBar(content=ft.Text(lang_manager.get_text("queue_sent_message", len(local_tasks_queue))))
+        local_tasks_queue.clear()
+        tasks_container.controls.clear()
+        main_submit_button.disabled = True
+        if page:
+            page.overlay.append(snack_bar)
+            snack_bar.open = True
+            page.update()
 
     languages = ["French", "English", "Russian", "Portuguese", "Spanish", "Italian", "Ukrainian"]
     language_checkboxes = [ft.Checkbox(label=lang, on_change=update_ui_elements) for lang in languages]
     languages_row = ft.Row(controls=language_checkboxes, scroll=ft.ScrollMode.ADAPTIVE)
-    main_submit_button = ft.ElevatedButton(text=lang_manager.get_text("submit_button"), icon=ft.Icons.SEND, bgcolor=ft.Colors.GREEN_500, color=ft.Colors.WHITE, width=240, height=50, on_click=on_submit_click, disabled=True)
+    
+    add_to_queue_button = ft.ElevatedButton(
+        # ВИПРАВЛЕНО
+        text=lang_manager.get_text("add_to_queue_button"), 
+        icon=ft.Icons.ADD_TO_QUEUE, 
+        on_click=add_to_queue_click, 
+        disabled=True
+    )
+    
+    main_submit_button = ft.ElevatedButton(
+        # ВИПРАВЛЕНО
+        text=lang_manager.get_text("submit_queue_button"), 
+        icon=ft.Icons.SEND, 
+        bgcolor=ft.Colors.GREEN_500, 
+        color=ft.Colors.WHITE, 
+        width=300, 
+        height=50, 
+        on_click=on_submit_click, 
+        disabled=True
+    )
+    
+    text_input.on_change = update_ui_elements
     card_title_input.on_change = update_ui_elements
 
     return ft.Tab(
@@ -191,11 +214,24 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         content=ft.Container(content=ft.Column([
             ft.Text(lang_manager.get_text("main_tab_title"), size=20, weight=ft.FontWeight.BOLD),
             ft.Divider(height=20),
-            card_title_input, char_counter, text_input,
+            card_title_input, 
+            char_counter, 
+            text_input,
             ft.Text(lang_manager.get_text("translation_languages_label"), size=16),
-            languages_row, stages_main_container,
+            languages_row, 
+            stages_main_container,
+            ft.Container(
+                content=add_to_queue_button,
+                padding=ft.padding.only(top=15)
+            ),
+            ft.Divider(height=20),
+            # ВИПРАВЛЕНО
+            ft.Text(lang_manager.get_text("submission_queue_title"), size=18, weight=ft.FontWeight.BOLD),
+            ft.Container(
+                content=tasks_container,
+                padding=ft.padding.only(top=10)
+            ),
             ft.Container(height=15),
             ft.Row([main_submit_button], alignment=ft.MainAxisAlignment.CENTER),
-            ft.Divider(height=20), tasks_container,
         ], spacing=10, scroll=ft.ScrollMode.ADAPTIVE), padding=20)
     )

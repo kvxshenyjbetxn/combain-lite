@@ -34,8 +34,7 @@
   "video_title_label": "Video title:",
   "stage_preview": "Preview",
   "card_title_label": "Task name (for card):",
-"translated_video_title_label": "Final video title"
-  ,
+  "translated_video_title_label": "Final video title:",
   "regenerate_prompt_label": "Enter prompt for regeneration",
   "regenerate_dialog_title": "Regeneration for language: {lang}",
   "cancel": "Cancel",
@@ -51,5 +50,10 @@
   "demo_image_not_found": "Demo images not found.\nAdd them to the 'image' folder in the project root.",
   "ok": "OK",
   "add_demo_images": "Add demo images",
-  "clear_gallery": "Clear gallery"
+  "clear_gallery": "Clear gallery",
+  "add_to_queue_button": "Add to Queue",
+  "submit_queue_button": "Submit Queue for Processing",
+  "delete_from_queue_tooltip": "Remove task from queue",
+  "submission_queue_title": "Submission Queue:",
+  "queue_sent_message": "Queue of {0} tasks has been sent to the server!"
 }

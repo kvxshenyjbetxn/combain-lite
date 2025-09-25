@@ -34,8 +34,7 @@
   "stage_preview": "Превью",
   "video_title_label": "Назва для відео:",
   "card_title_label": "Назва завдання (для картки):",
-"translated_video_title_label": "Кінцева назва відео"
-  ,
+  "translated_video_title_label": "Кінцева назва відео:",
   "regenerate_prompt_label": "Введіть промт для перегенерації",
   "regenerate_dialog_title": "Перегенерація для мови: {lang}",
   "cancel": "Скасувати",
@@ -51,5 +50,10 @@
   "demo_image_not_found": "Демо зображення не знайдені.\nДодайте їх до папки 'image' в корені проекту.",
   "ok": "Зрозуміло",
   "add_demo_images": "Додати демо зображення",
-  "clear_gallery": "Очистити галерею"
+  "clear_gallery": "Очистити галерею",
+  "add_to_queue_button": "Додати в чергу",
+  "submit_queue_button": "Відправити чергу на обробку",
+  "delete_from_queue_tooltip": "Видалити завдання з черги",
+  "submission_queue_title": "Черга на відправку:",
+  "queue_sent_message": "Чергу з {0} завдань відправлено на сервер!"
 }

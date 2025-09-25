@@ -34,8 +34,7 @@
   "video_title_label": "Название для видео:",
   "stage_preview": "Превью",
   "card_title_label": "Название задачи (для карточки):",
-"translated_video_title_label": "Итоговое название видео"
-  ,
+  "translated_video_title_label": "Итоговое название видео:",
   "regenerate_prompt_label": "Введите промт для перегенерации",
   "regenerate_dialog_title": "Перегенерация для языка: {lang}",
   "cancel": "Отмена",
@@ -51,5 +50,10 @@
   "demo_image_not_found": "Демо изображения не найдены.\nДобавьте их в папку 'image' в корне проекта.",
   "ok": "Понятно",
   "add_demo_images": "Добавить демо изображения",
-  "clear_gallery": "Очистить галерею"
+  "clear_gallery": "Очистить галерею",
+  "add_to_queue_button": "Добавить в очередь",
+  "submit_queue_button": "Отправить очередь на обработку",
+  "delete_from_queue_tooltip": "Удалить задачу из очереди",
+  "submission_queue_title": "Очередь на отправку:",
+  "queue_sent_message": "Очередь из {0} задач отправлена на сервер!"
 }
