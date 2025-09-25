@@ -35,4 +35,21 @@
   "stage_preview": "Preview",
   "card_title_label": "Task name (for card):",
 "translated_video_title_label": "Final video title"
+  ,
+  "regenerate_prompt_label": "Enter prompt for regeneration",
+  "regenerate_dialog_title": "Regeneration for language: {lang}",
+  "cancel": "Cancel",
+  "regenerate": "Regenerate",
+  "demo_image": "Demo Image",
+  "delete": "Delete",
+  "regenerate_tooltip": "Regenerate",
+  "language_label": "Language: {lang}",
+  "select_language_dialog_title": "Select language for generation",
+  "close": "Close",
+  "add": "Add",
+  "info": "Information",
+  "demo_image_not_found": "Demo images not found.\nAdd them to the 'image' folder in the project root.",
+  "ok": "OK",
+  "add_demo_images": "Add demo images",
+  "clear_gallery": "Clear gallery"
 }

@@ -35,4 +35,21 @@
   "video_title_label": "Назва для відео:",
   "card_title_label": "Назва завдання (для картки):",
 "translated_video_title_label": "Кінцева назва відео"
+  ,
+  "regenerate_prompt_label": "Введіть промт для перегенерації",
+  "regenerate_dialog_title": "Перегенерація для мови: {lang}",
+  "cancel": "Скасувати",
+  "regenerate": "Перегенерувати",
+  "demo_image": "Демо зображення",
+  "delete": "Видалити",
+  "regenerate_tooltip": "Перегенерувати",
+  "language_label": "Мова: {lang}",
+  "select_language_dialog_title": "Виберіть мову для генерації",
+  "close": "Закрити",
+  "add": "Додати",
+  "info": "Інформація",
+  "demo_image_not_found": "Демо зображення не знайдені.\nДодайте їх до папки 'image' в корені проекту.",
+  "ok": "Зрозуміло",
+  "add_demo_images": "Додати демо зображення",
+  "clear_gallery": "Очистити галерею"
 }

@@ -35,4 +35,21 @@
   "stage_preview": "Превью",
   "card_title_label": "Название задачи (для карточки):",
 "translated_video_title_label": "Итоговое название видео"
+  ,
+  "regenerate_prompt_label": "Введите промт для перегенерации",
+  "regenerate_dialog_title": "Перегенерация для языка: {lang}",
+  "cancel": "Отмена",
+  "regenerate": "Перегенерировать",
+  "demo_image": "Демо изображение",
+  "delete": "Удалить",
+  "regenerate_tooltip": "Перегенерировать",
+  "language_label": "Язык: {lang}",
+  "select_language_dialog_title": "Выберите язык для генерации",
+  "close": "Закрыть",
+  "add": "Добавить",
+  "info": "Информация",
+  "demo_image_not_found": "Демо изображения не найдены.\nДобавьте их в папку 'image' в корне проекта.",
+  "ok": "Понятно",
+  "add_demo_images": "Добавить демо изображения",
+  "clear_gallery": "Очистить галерею"
 }

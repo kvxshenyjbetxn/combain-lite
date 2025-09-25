@@ -143,7 +143,7 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         snack_bar = ft.SnackBar(content=ft.Text(lang_manager.get_text("submit_message", len(text))))
         if page: page.overlay.append(snack_bar), setattr(snack_bar, 'open', True), page.update()
 
-    languages = ["FR", "EN", "RU", "PT", "ES", "IT", "UA"]
+    languages = ["French", "English", "Russian", "Portuguese", "Spanish", "Italian", "Ukrainian"]
     language_checkboxes = [ft.Checkbox(label=lang, on_change=update_ui_elements) for lang in languages]
     languages_row = ft.Row(controls=language_checkboxes, scroll=ft.ScrollMode.ADAPTIVE)
     main_submit_button = ft.ElevatedButton(text=lang_manager.get_text("submit_button"), icon=ft.Icons.SEND, bgcolor=ft.Colors.GREEN_500, color=ft.Colors.WHITE, width=240, height=50, on_click=on_submit_click, disabled=True)

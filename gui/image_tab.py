@@ -37,34 +37,30 @@ def get_image_tab(lang_manager, page=None):
             build_gallery_from_data()
 
     def open_regenerate_prompt_dialog(lang, image_index):
-        prompt_input = ft.TextField(label="Введіть промт для перегенерації", multiline=True)
+        prompt_input = ft.TextField(label=lang_manager.get_text("regenerate_prompt_label"), multiline=True)
 
-        def on_regenerate_confirm(e):
+        def on_regenerate_confirm(e, _lang, _image_index):
             dialog_to_close = dialog
-            print(f"Перегенерація для мови '{lang}' з промптом: '{prompt_input.value}'")
-            
-            if lang in gallery_data and 0 <= image_index < len(gallery_data[lang]):
-                del gallery_data[lang][image_index]
-            
+            print(f"Перегенерація для мови '{_lang}' з промптом: '{prompt_input.value}'")
+            if _lang in gallery_data and 0 <= _image_index < len(gallery_data[_lang]):
+                del gallery_data[_lang][_image_index]
             # Визначаємо шлях до кореневої папки проекту (на один рівень вище від папки 'gui')
             project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
             image_folder = os.path.join(project_root, "image")
-
             image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
             image_path = random.choice(image_files) if image_files else None
-            if lang not in gallery_data:
-                gallery_data[lang] = []
-            gallery_data[lang].append({"path": image_path})
-
+            if _lang not in gallery_data:
+                gallery_data[_lang] = []
+            gallery_data[_lang].append({"path": image_path})
             build_gallery_from_data()
             close_dialog(dialog_to_close)
-            
+
         dialog = ft.AlertDialog(
-            modal=True, title=ft.Text(f"Перегенерація для мови: {lang}"),
+            modal=True, title=ft.Text(lang_manager.get_text("regenerate_dialog_title").format(lang=lang)),
             content=prompt_input,
             actions=[
-                ft.TextButton("Скасувати", on_click=lambda _: close_dialog(dialog)),
-                ft.ElevatedButton("Перегенерувати", on_click=on_regenerate_confirm, bgcolor=ft.Colors.BLUE_400, color=ft.Colors.WHITE),
+                ft.TextButton(lang_manager.get_text("cancel"), on_click=lambda _, d=dialog: close_dialog(d)),
+                ft.ElevatedButton(lang_manager.get_text("regenerate"), on_click=lambda e, l=lang, i=image_index: on_regenerate_confirm(e, l, i), bgcolor=ft.Colors.BLUE_400, color=ft.Colors.WHITE),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -96,7 +92,7 @@ def get_image_tab(lang_manager, page=None):
                     image_widget = ft.Container(
                         content=ft.Column([
                             ft.Icon(ft.Icons.IMAGE, size=50, color=ft.Colors.ON_SURFACE_VARIANT),
-                            ft.Text("Demo Image", size=14, color=ft.Colors.ON_SURFACE_VARIANT)
+                            ft.Text(lang_manager.get_text("demo_image"), size=14, color=ft.Colors.ON_SURFACE_VARIANT)
                         ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                         height=180,
                         bgcolor="surfaceVariant",
@@ -105,8 +101,8 @@ def get_image_tab(lang_manager, page=None):
                     )
                 
                 buttons_row = ft.Row([
-                    ft.IconButton(icon=ft.Icons.DELETE, icon_color=ft.Colors.RED_400, tooltip="Видалити", on_click=lambda _, l=lang_code, idx=i: delete_image(l, idx)),
-                    ft.IconButton(icon=ft.Icons.REFRESH, icon_color=ft.Colors.BLUE_400, tooltip="Перегенерувати", on_click=lambda _, l=lang_code, idx=i: open_regenerate_prompt_dialog(l, idx)),
+                    ft.IconButton(icon=ft.Icons.DELETE, icon_color=ft.Colors.RED_400, tooltip=lang_manager.get_text("delete"), on_click=lambda _, l=lang_code, idx=i: delete_image(l, idx)),
+                    ft.IconButton(icon=ft.Icons.REFRESH, icon_color=ft.Colors.BLUE_400, tooltip=lang_manager.get_text("regenerate_tooltip"), on_click=lambda _, l=lang_code, idx=i: open_regenerate_prompt_dialog(l, idx)),
                 ], alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=5)
 
                 # ВИПРАВЛЕНО: Змінено налаштування колонок для кращої адаптивності
@@ -125,7 +121,7 @@ def get_image_tab(lang_manager, page=None):
             
             language_section = ft.Column(
                 [
-                    ft.Row([ft.Icon(ft.Icons.LANGUAGE), ft.Text(f"Мова: {lang_code}", size=18, weight=ft.FontWeight.BOLD)]),
+                    ft.Row([ft.Icon(ft.Icons.LANGUAGE), ft.Text(lang_manager.get_text("language_label").format(lang=lang_code), size=18, weight=ft.FontWeight.BOLD)]),
                     ft.Container(
                         content=image_layout, 
                         border=ft.border.all(1, ft.Colors.OUTLINE),
@@ -145,10 +141,10 @@ def get_image_tab(lang_manager, page=None):
                 add_image_for_language(language_radio_group.value)
         
         dialog = ft.AlertDialog(
-            modal=True, title=ft.Text("Виберіть мову для генерації"), content=language_radio_group,
+            modal=True, title=ft.Text(lang_manager.get_text("select_language_dialog_title")), content=language_radio_group,
             actions=[
-                ft.TextButton("Закрити", on_click=lambda _: close_dialog(dialog)),
-                ft.ElevatedButton("Додати", on_click=on_add, bgcolor=ft.Colors.BLUE_400, color=ft.Colors.WHITE),
+                ft.TextButton(lang_manager.get_text("close"), on_click=lambda _: close_dialog(dialog)),
+                ft.ElevatedButton(lang_manager.get_text("add"), on_click=on_add, bgcolor=ft.Colors.BLUE_400, color=ft.Colors.WHITE),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -186,10 +182,10 @@ def get_image_tab(lang_manager, page=None):
 
     def show_placeholder_dialog(e):
         dialog = ft.AlertDialog(
-            modal=True, title=ft.Text("Інформація"),
-            content=ft.Text("Демо зображення не знайдені.\nДодайте їх до папки 'image' в корені проекту.", text_align=ft.TextAlign.CENTER),
+            modal=True, title=ft.Text(lang_manager.get_text("info")),
+            content=ft.Text(lang_manager.get_text("demo_image_not_found"), text_align=ft.TextAlign.CENTER),
             actions=[
-                ft.TextButton("Зрозуміло", on_click=lambda _: close_dialog(dialog))
+                ft.TextButton(lang_manager.get_text("ok"), on_click=lambda _: close_dialog(dialog))
             ]
         )
         if page:
@@ -197,8 +193,8 @@ def get_image_tab(lang_manager, page=None):
             dialog.open = True
             page.update()
 
-    add_button = ft.ElevatedButton("Додати демо зображення", icon=ft.Icons.ADD_A_PHOTO, on_click=open_language_selection_dialog, bgcolor=ft.Colors.BLUE_400, color=ft.Colors.WHITE, height=40)
-    clear_button = ft.ElevatedButton("Очистити галерею", icon=ft.Icons.CLEAR_ALL, on_click=lambda e: (gallery_data.clear(), build_gallery_from_data()), bgcolor=ft.Colors.RED_400, color=ft.Colors.WHITE, height=40)
+    add_button = ft.ElevatedButton(lang_manager.get_text("add_demo_images"), icon=ft.Icons.ADD_A_PHOTO, on_click=open_language_selection_dialog, bgcolor=ft.Colors.BLUE_400, color=ft.Colors.WHITE, height=40)
+    clear_button = ft.ElevatedButton(lang_manager.get_text("clear_gallery"), icon=ft.Icons.CLEAR_ALL, on_click=lambda e: (gallery_data.clear(), build_gallery_from_data()), bgcolor=ft.Colors.RED_400, color=ft.Colors.WHITE, height=40)
     
     return ft.Tab(
         text=lang_manager.get_text("image_tab"), icon=ft.Icons.IMAGE,
