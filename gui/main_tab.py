@@ -1,22 +1,23 @@
+# gui/main_tab.py
 import flet as ft
 import time
 from collections import defaultdict
+import uuid # Для генерації унікальних ID завдань
 
-def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=None):
+# Змінюємо сигнатуру функції, щоб приймати user_data та db
+def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=None, user_data=None, db=None):
 
     stages_main_container = ft.Column()
     tasks_container = ft.ResponsiveRow(spacing=10, run_spacing=10)
     task_counter = 1
 
     stages_state = defaultdict(lambda: {
-        "video_title": "",
-        "stage_translation": True, "stage_images": True, "stage_voiceover": True,
-        "stage_subtitles": True, "stage_montage": True, "stage_description": True,
-        "stage_preview": True
+        "video_title": "", "stage_translation": True, "stage_images": True, "stage_voiceover": True,
+        "stage_subtitles": True, "stage_montage": True, "stage_description": True, "stage_preview": True
     })
-
+    
+    # ... (решта ваших функцій: delete_card_directly, on_stage_click, on_translated_title_change і т.д. залишаються без змін)
     def delete_card_directly(e):
-        """Пряме видалення картки без діалогового вікна."""
         card_to_delete = e.control.data
         if card_to_delete in tasks_container.controls:
             tasks_container.controls.remove(card_to_delete)
@@ -58,6 +59,7 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         if page: page.update()
 
     def create_task_card(title, languages_with_stages):
+        # ... (ця функція залишається без змін)
         content_column = ft.Column(spacing=15, visible=False)
         for lang, data in languages_with_stages.items():
             translated_title = data.get("video_title", "").strip() or f"{lang} {title}"
@@ -118,37 +120,66 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         card_container.border_radius = ft.border_radius.all(8)
         
         return final_card_column
-
+    
+    # ***** ОСЬ ТУТ ОСНОВНІ ЗМІНИ *****
     def on_submit_click(e):
-        nonlocal task_counter
-        title = card_title_input.value.strip() or f"Задання {task_counter}"
-        if not card_title_input.value.strip(): task_counter += 1
-        
-        text = text_input.value or ""
+        if not user_data or not db:
+            print("Помилка: користувач не автентифікований.")
+            return
+
+        text_to_process = text_input.value or ""
         selected_languages = [cb.label for cb in language_checkboxes if cb.value]
-        if not selected_languages: return
+        if not selected_languages or not text_to_process:
+            return
 
-        task_data = {lang: stages_state[lang] for lang in selected_languages}
-        tasks_container.controls.insert(0, create_task_card(title, task_data))
+        # 1. Формуємо об'єкт завдання
+        task_id = str(uuid.uuid4()) # Унікальний ID для нового завдання
+        task_data = {
+            "userId": user_data['localId'],
+            "original_text": text_to_process,
+            "title": card_title_input.value.strip() or f"Завдання без назви",
+            "selected_stages": {lang: stages_state[lang] for lang in selected_languages},
+            "status": "new", # Початковий статус
+            "created_at": int(time.time())
+        }
 
-        text_input.value, card_title_input.value = "", ""
-        for cb in language_checkboxes: cb.value = False
-        stages_state.clear()
-        
-        update_ui_elements()
-        text_input.update(), card_title_input.update()
-        char_counter.value = lang_manager.get_text("characters_count", 0)
-        char_counter.update()
+        try:
+            # 2. Відправляємо завдання в Firebase Realtime Database
+            # Структура буде: /tasks/USER_ID/TASK_ID
+            user_id = user_data['localId']
+            db.child("tasks").child(user_id).child(task_id).set(task_data)
 
-        snack_bar = ft.SnackBar(content=ft.Text(lang_manager.get_text("submit_message", len(text))))
-        if page: page.overlay.append(snack_bar), setattr(snack_bar, 'open', True), page.update()
+            # 3. Показуємо повідомлення про успіх
+            snack_bar = ft.SnackBar(content=ft.Text(f"Завдання '{task_data['title']}' відправлено на сервер!"))
+            if page:
+                page.overlay.append(snack_bar)
+                snack_bar.open = True
+                page.update()
+
+            # 4. Очищуємо форму
+            text_input.value, card_title_input.value = "", ""
+            for cb in language_checkboxes: cb.value = False
+            stages_state.clear()
+            update_ui_elements()
+            text_input.update(), card_title_input.update()
+            char_counter.value = lang_manager.get_text("characters_count", 0)
+            char_counter.update()
+
+        except Exception as ex:
+            print(f"Помилка відправки даних в Firebase: {ex}")
+            snack_bar = ft.SnackBar(content=ft.Text("Помилка: не вдалося відправити завдання."))
+            if page:
+                page.overlay.append(snack_bar)
+                snack_bar.open = True
+                page.update()
 
     languages = ["French", "English", "Russian", "Portuguese", "Spanish", "Italian", "Ukrainian"]
     language_checkboxes = [ft.Checkbox(label=lang, on_change=update_ui_elements) for lang in languages]
     languages_row = ft.Row(controls=language_checkboxes, scroll=ft.ScrollMode.ADAPTIVE)
     main_submit_button = ft.ElevatedButton(text=lang_manager.get_text("submit_button"), icon=ft.Icons.SEND, bgcolor=ft.Colors.GREEN_500, color=ft.Colors.WHITE, width=240, height=50, on_click=on_submit_click, disabled=True)
+    
     card_title_input.on_change = update_ui_elements
-
+    
     return ft.Tab(
         text=lang_manager.get_text("main_tab"), icon=ft.Icons.EDIT,
         content=ft.Container(content=ft.Column([
