@@ -31,5 +31,6 @@
   "stage_subtitles": "Субтитри",
   "stage_montage": "Монтаж",
   "stage_description": "Опис",
-  "stage_preview": "Превью"
+  "stage_preview": "Превью",
+  "video_title_label": "Назва для відео:"
 }
