@@ -14,7 +14,7 @@ def main(page: ft.Page):
         """Ця функція викликається, коли користувач успішно увійшов."""
         print(f"Користувач {user_data.get('email', 'unknown')} увійшов. Будуємо основний інтерфейс.")
         page.clean()
-        build_main_view(page, user_data)
+        build_main_view(page, user_data, logout)
 
     def show_login_screen():
         """Показує екран авторизації."""
@@ -23,6 +23,17 @@ def main(page: ft.Page):
         auth_control = get_auth_view(on_login_success)
         page.add(auth_control)
         page.update()
+        
+    def logout(e=None):
+      """Функція виходу з акаунту."""
+      # Шлях до файлу кешу
+      cache_file = AUTH_CACHE_FILE
+      # Видаляємо файл, якщо він існує
+      if os.path.exists(cache_file):
+          os.remove(cache_file)
+          print("Кеш авторизації очищено.")
+      # Показуємо екран входу
+      show_login_screen()
 
     # --- ЛОГІКА АВТОМАТИЧНОГО ВХОДУ ---
     def try_auto_login():

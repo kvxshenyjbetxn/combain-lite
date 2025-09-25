@@ -1,6 +1,6 @@
 import flet as ft
 
-def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, language_dropdown, language_hint, app_info_title, version_text, author_text, description_text):
+def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, language_dropdown, language_hint, app_info_title, version_text, author_text, description_text, on_logout=None):
     return ft.Tab(
         text=lang_manager.get_text("settings_tab"),
         icon=ft.Icons.SETTINGS,
@@ -29,6 +29,14 @@ def get_settings_tab(lang_manager, settings_title, theme_label, theme_switch, la
                 version_text,
                 author_text,
                 description_text,
+                ft.Container(height=30),
+                ft.ElevatedButton(
+                text="Вийти з акаунту",
+                icon=ft.Icons.LOGOUT,  # ft.icons -> ft.Icons
+                on_click=on_logout,
+                bgcolor=ft.Colors.RED_ACCENT_700,  # ft.colors -> ft.Colors
+                color=ft.Colors.WHITE  # ft.colors -> ft.Colors
+            ),
             ], 
             spacing=5,
             alignment=ft.MainAxisAlignment.START,

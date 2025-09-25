@@ -1,74 +1,53 @@
 import flet as ft
-import json
-import os
 from language_manager import LanguageManager
 from gui.main_tab import get_main_tab
 from gui.settings_tab import get_settings_tab
 from gui.image_tab import get_image_tab
-from firebase_auth import db
+from firebase_auth import db # Імпорт для передачі в main_tab
 
 # Глобальний менеджер мов
 lang_manager = LanguageManager()
 
-def build_main_view(page: ft.Page, user_data):
+# Функція тепер приймає user_data та logout_callback
+def build_main_view(page: ft.Page, user_data, logout_callback):
     page.title = lang_manager.get_text("app_title")
     
-    # **** Застосовуємо рекомендований порядок дій ****
-    # 1. Скидаємо стан вікна, щоб нічого не блокувало зміну розміру.
     page.window.maximized = False
     page.window.minimized = False
     page.window.resizable = True
-    
-    # 2. Встановлюємо бажаний розмір через надійний Window API.
     page.window.width = 1920
     page.window.height = 1080
-    
-    # 3. Негайно оновлюємо сторінку, щоб застосувати всі зміни.
     page.update()
-    # ***************************************************************
     
     page.padding = 20
-    # ***************************************************************
     
-    # Встановлюємо тему з конфігу
-    if lang_manager.get_theme() == "dark":
-        page.theme_mode = ft.ThemeMode.DARK
-    else:
-        page.theme_mode = ft.ThemeMode.LIGHT
-    # Встановлюємо тему з конфігу
     if lang_manager.get_theme() == "dark":
         page.theme_mode = ft.ThemeMode.DARK
     else:
         page.theme_mode = ft.ThemeMode.LIGHT
     
-    # Лічильник символів
     char_counter = ft.Text(
         lang_manager.get_text("characters_count", 0),
         size=14,
         color=ft.Colors.GREY_700
     )
     
-    # Поле для вводу тексту (статичне, великого розміру)
     text_input = ft.TextField(
         label=lang_manager.get_text("enter_text"),
         multiline=True,
-        min_lines=15,  # Встановлюємо бажану висоту в рядках
-        max_lines=15,  # Фіксуємо висоту, щоб поле не розширювалось
+        min_lines=15,
+        max_lines=15,
         border_color=ft.Colors.BLUE_400,
         focused_border_color=ft.Colors.BLUE_600,
     )
 
-    # Функція для оновлення лічильника символів
     def update_char_count(e):
         text = text_input.value or ""
         char_counter.value = lang_manager.get_text("characters_count", len(text))
         char_counter.update()
     
-    # Прив'язуємо функцію до зміни тексту
     text_input.on_change = update_char_count
 
-    
-    # Функція для зміни теми
     def change_theme(e):
         if page.theme_mode == ft.ThemeMode.LIGHT:
             page.theme_mode = ft.ThemeMode.DARK
@@ -80,7 +59,6 @@ def build_main_view(page: ft.Page, user_data):
             lang_manager.set_theme("light")
         page.update()
     
-    # Перемикач теми
     theme_switch = ft.ElevatedButton(
         text=lang_manager.get_text("dark_theme"),
         icon=ft.Icons.DARK_MODE,
@@ -91,17 +69,12 @@ def build_main_view(page: ft.Page, user_data):
         height=40
     )
     
-    # Функція для зміни мови
     def change_language(e):
         selected_lang = language_dropdown.value
         if selected_lang and lang_manager.set_language(selected_lang):
-            # Оновлюємо заголовок сторінки
             page.title = lang_manager.get_text("app_title")
-
-            # Оновлюємо всі текстові елементи
             update_ui_texts()
     
-    # Dropdown для вибору мови
     language_dropdown = ft.Dropdown(
         label=lang_manager.get_text("language_interface"),
         value=lang_manager.get_current_language(),
@@ -112,7 +85,6 @@ def build_main_view(page: ft.Page, user_data):
         on_change=change_language,
         width=200
     )
-    # Підсказка про перезапуск
     language_hint = ft.Text(
         lang_manager.get_text("restart_required"),
         size=12,
@@ -120,80 +92,41 @@ def build_main_view(page: ft.Page, user_data):
         italic=True
     )
     
-    # Функція для оновлення всіх текстів UI
     def update_ui_texts():
-        # Оновлюємо лічильник символів
         text = text_input.value or ""
         char_counter.value = lang_manager.get_text("characters_count", len(text))
-
-        # Оновлюємо поле введення
         text_input.label = lang_manager.get_text("enter_text")
         card_title_input.label = lang_manager.get_text("card_title_label")
-
-        # Оновлюємо кнопку теми
         if page.theme_mode == ft.ThemeMode.LIGHT:
             theme_switch.text = lang_manager.get_text("dark_theme")
         else:
             theme_switch.text = lang_manager.get_text("light_theme")
-
-        # Оновлюємо dropdown мови
         language_dropdown.label = lang_manager.get_text("language_interface")
-
-        # Оновлюємо вкладки
         main_tab.text = lang_manager.get_text("main_tab")
         image_tab.text = lang_manager.get_text("image_tab")
         settings_tab.text = lang_manager.get_text("settings_tab")
-
-        # Оновлюємо тексти в налаштуваннях
         settings_title.value = lang_manager.get_text("settings_title")
         theme_label.value = lang_manager.get_text("theme_interface")
         app_info_title.value = lang_manager.get_text("app_info")
         version_text.value = lang_manager.get_text("version")
         author_text.value = lang_manager.get_text("author")
         description_text.value = lang_manager.get_text("description")
-
-        # Оновлюємо заголовок додатка
         app_title.value = lang_manager.get_text("app_title")
-
-        # Оновлюємо всю сторінку
         page.update()
     
-    # Створюємо текстові елементи для налаштувань
-    settings_title = ft.Text(
-        lang_manager.get_text("settings_title"),
-        size=20,
-        weight=ft.FontWeight.BOLD
-    )
-    
+    settings_title = ft.Text(lang_manager.get_text("settings_title"), size=20, weight=ft.FontWeight.BOLD)
     theme_label = ft.Text(lang_manager.get_text("theme_interface"), size=16)
-    app_info_title = ft.Text(
-        lang_manager.get_text("app_info"),
-        size=16,
-        weight=ft.FontWeight.BOLD
-    )
+    app_info_title = ft.Text(lang_manager.get_text("app_info"), size=16, weight=ft.FontWeight.BOLD)
     version_text = ft.Text(lang_manager.get_text("version"), size=14)
     author_text = ft.Text(lang_manager.get_text("author"), size=14)
     description_text = ft.Text(lang_manager.get_text("description"), size=14)
-    
-    # Заголовок додатка
-    app_title = ft.Text(
-        lang_manager.get_text("app_title"),
-        size=28,
-        weight=ft.FontWeight.BOLD,
-        color=ft.Colors.BLUE_800
-    )
-    
-    # Поле для назви картки
-    card_title_input = ft.TextField(
-        label=lang_manager.get_text("card_title_label"), # Використовуємо новий ключ
-        border_color=ft.Colors.BLUE_400,
-        focused_border_color=ft.Colors.BLUE_600,
-    )
+    app_title = ft.Text(lang_manager.get_text("app_title"), size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800)
+    card_title_input = ft.TextField(label=lang_manager.get_text("card_title_label"), border_color=ft.Colors.BLUE_400, focused_border_color=ft.Colors.BLUE_600)
 
-    # Вкладка з основним функціоналом
-    # Новий рядок
+    # Передаємо user_data та db у main_tab
     main_tab = get_main_tab(lang_manager, char_counter, text_input, card_title_input, page, user_data, db)
-    # Вкладка з налаштуваннями
+    
+    # Передаємо logout_callback у settings_tab
     settings_tab = get_settings_tab(
         lang_manager,
         settings_title,
@@ -204,12 +137,11 @@ def build_main_view(page: ft.Page, user_data):
         app_info_title,
         version_text,
         author_text,
-        description_text
+        description_text,
+        on_logout=logout_callback
     )
-    # Вкладка генерації зображень
     image_tab = get_image_tab(lang_manager, page)
 
-    # Створюємо tabs
     tabs = ft.Tabs(
         selected_index=0,
         animation_duration=300,
@@ -217,7 +149,6 @@ def build_main_view(page: ft.Page, user_data):
         expand=True
     )
     
-    # Додаємо всі елементи на сторінку
     page.add(
         ft.Column([
             app_title,
@@ -229,3 +160,6 @@ def build_main_view(page: ft.Page, user_data):
         expand=True
         )
     )
+    
+    # Фінальне оновлення екрану
+    page.update()
