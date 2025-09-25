@@ -5,11 +5,12 @@ from language_manager import LanguageManager
 from gui.main_tab import get_main_tab
 from gui.settings_tab import get_settings_tab
 from gui.image_tab import get_image_tab
+from firebase_auth import db
 
 # Глобальний менеджер мов
 lang_manager = LanguageManager()
 
-def main(page: ft.Page):
+def build_main_view(page: ft.Page, user_data):
     page.title = lang_manager.get_text("app_title")
     
     # **** Застосовуємо рекомендований порядок дій ****
@@ -190,7 +191,8 @@ def main(page: ft.Page):
     )
 
     # Вкладка з основним функціоналом
-    main_tab = get_main_tab(lang_manager, char_counter, text_input, card_title_input, page)
+    # Новий рядок
+    main_tab = get_main_tab(lang_manager, char_counter, text_input, card_title_input, page, user_data, db)
     # Вкладка з налаштуваннями
     settings_tab = get_settings_tab(
         lang_manager,
@@ -227,7 +229,3 @@ def main(page: ft.Page):
         expand=True
         )
     )
-
-
-if __name__ == "__main__":
-    ft.app(target=main)
