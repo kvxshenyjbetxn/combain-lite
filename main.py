@@ -127,7 +127,7 @@ def main(page: ft.Page):
 
         # Оновлюємо поле введення
         text_input.label = lang_manager.get_text("enter_text")
-        video_title_input.label = lang_manager.get_text("video_title_label")
+        card_title_input.label = lang_manager.get_text("card_title_label")
 
         # Оновлюємо кнопку теми
         if page.theme_mode == ft.ThemeMode.LIGHT:
@@ -182,15 +182,15 @@ def main(page: ft.Page):
         color=ft.Colors.BLUE_800
     )
     
-    # Поле для назви відео
-    video_title_input = ft.TextField(
-        label=lang_manager.get_text("video_title_label"),
+    # Поле для назви картки
+    card_title_input = ft.TextField(
+        label=lang_manager.get_text("card_title_label"), # Використовуємо новий ключ
         border_color=ft.Colors.BLUE_400,
         focused_border_color=ft.Colors.BLUE_600,
     )
 
     # Вкладка з основним функціоналом
-    main_tab = get_main_tab(lang_manager, char_counter, text_input, video_title_input, page)
+    main_tab = get_main_tab(lang_manager, char_counter, text_input, card_title_input, page)
     # Вкладка з налаштуваннями
     settings_tab = get_settings_tab(
         lang_manager,

@@ -2,13 +2,14 @@ import flet as ft
 import time
 from collections import defaultdict
 
-def get_main_tab(lang_manager, char_counter, text_input, video_title_input, page=None):
+def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=None):
 
     stages_main_container = ft.Column()
-    # Змінюємо контейнер на ResponsiveRow для горизонтального розташування карток
     tasks_container = ft.ResponsiveRow(spacing=10, run_spacing=10)
+    task_counter = 1 # Лічильник для автоматичної нумерації завдань
 
     stages_state = defaultdict(lambda: {
+        "video_title": "",
         "stage_translation": True, "stage_images": True, "stage_voiceover": True,
         "stage_subtitles": True, "stage_montage": True, "stage_description": True,
         "stage_preview": True
@@ -19,6 +20,10 @@ def get_main_tab(lang_manager, char_counter, text_input, video_title_input, page
         stage_key = e.control.data["stage"]
         stages_state[lang][stage_key] = e.control.value
         print(f"Етап '{stage_key}' для мови '{lang}' змінено на: {e.control.value}")
+
+    def on_translated_title_change(e):
+        lang = e.control.data
+        stages_state[lang]["video_title"] = e.control.value
 
     def create_stages_menu(language_code):
         stages_keys = [
@@ -35,16 +40,29 @@ def get_main_tab(lang_manager, char_counter, text_input, video_title_input, page
             ) for stage in stages_keys
         ]
         
-        controls_in_row = [
-            ft.Text(f"{lang_manager.get_text('stages_label')} ({language_code}):", weight=ft.FontWeight.BOLD, size=14)
-        ]
-        controls_in_row.extend(stage_checkboxes)
+        controls_in_row = ft.Row(
+            controls=stage_checkboxes,
+            scroll=ft.ScrollMode.ADAPTIVE
+        )
+
+        translated_title_field = ft.TextField(
+            label=f"{lang_manager.get_text('translated_video_title_label')} ({language_code})",
+            value=stages_state[language_code]["video_title"],
+            on_change=on_translated_title_change,
+            data=language_code,
+            dense=True,
+            border_color=ft.Colors.BLUE_GREY,
+        )
+
+        container_content = ft.Column([
+            ft.Text(f"{lang_manager.get_text('stages_label')} ({language_code}):", weight=ft.FontWeight.BOLD, size=14),
+            controls_in_row,
+            ft.Container(height=5),
+            translated_title_field
+        ])
 
         return ft.Container(
-            content=ft.Row(
-                controls=controls_in_row,
-                scroll=ft.ScrollMode.ADAPTIVE
-            ),
+            content=container_content,
             padding=15,
             border=ft.border.all(1, ft.Colors.OUTLINE),
             border_radius=ft.border_radius.all(8),
@@ -70,50 +88,61 @@ def get_main_tab(lang_manager, char_counter, text_input, video_title_input, page
         for menu in stages_main_container.controls:
             menu.opacity = 1
         
-        can_submit = (video_title_input.value or "").strip() and any(cb.value for cb in language_checkboxes)
+        # Кнопка активна, якщо обрана хоча б одна мова
+        can_submit = any(cb.value for cb in language_checkboxes)
         main_submit_button.disabled = not can_submit
         
         if page: page.update()
 
     def create_task_card(title, languages_with_stages):
-        """Створює нову картку завдання з новою структурою."""
-        
-        # Створюємо вертикальний список етапів
-        content_column = ft.Column(spacing=15, visible=False) # Спочатку прихований
-        for lang, stages in languages_with_stages.items():
+        content_column = ft.Column(spacing=15, visible=False)
+        for lang, data in languages_with_stages.items():
+            translated_title = data.get("video_title", "").strip()
+            # Автоматична назва для відео, якщо поле порожнє
+            if not translated_title:
+                translated_title = f"{lang} {title}"
+
             stages_list = ft.Column(spacing=5)
-            for stage, active in stages.items():
-                if active:
-                    stages_list.controls.append(
-                        ft.Row([
-                            ft.Icon(ft.Icons.CHECK, color=ft.Colors.GREEN_500, size=16),
-                            ft.Text(lang_manager.get_text(stage), size=14)
-                        ])
-                    )
+            active_stages = {stage: active for stage, active in data.items() if stage != "video_title" and active}
+
+            for stage_key in active_stages:
+                stages_list.controls.append(
+                    ft.Row([
+                        ft.Icon(ft.Icons.CHECK, color=ft.Colors.GREEN_500, size=16),
+                        ft.Text(lang_manager.get_text(stage_key), size=14)
+                    ])
+                )
             
-            # Якщо для мови є активні етапи, додаємо блок
             if stages_list.controls:
                 content_column.controls.append(
                     ft.Column([
                         ft.Text(lang, weight=ft.FontWeight.BOLD, size=16),
-                        ft.Container(content=stages_list, padding=ft.padding.only(left=10))
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Row([
+                                    ft.Text(f"{lang_manager.get_text('translated_video_title_label')}:", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f'"{translated_title}"')
+                                ]),
+                                ft.Divider(height=8, thickness=0.5),
+                                ft.Text("Вибрані етапи:", italic=True, size=12),
+                                stages_list
+                            ]),
+                            padding=ft.padding.only(left=10)
+                        )
                     ])
                 )
         
-        # Заголовок картки
         header = ft.ListTile(
             title=ft.Text(title, weight=ft.FontWeight.BOLD),
             trailing=ft.Icon(ft.Icons.KEYBOARD_ARROW_DOWN),
         )
 
-        # Основний контейнер картки
         card_container = ft.Container(
             content=ft.Column([
                 header,
                 ft.Container(
                     content=content_column,
                     padding=ft.padding.only(left=15, right=15, bottom=15, top=5),
-                    # Анімація для плавного розгортання
                     animate_size=ft.Animation(150, ft.AnimationCurve.DECELERATE),
                 )
             ]),
@@ -122,27 +151,30 @@ def get_main_tab(lang_manager, char_counter, text_input, video_title_input, page
         )
         
         def toggle_card_expansion(e):
-            """Функція для розгортання/згортання картки."""
             content_column.visible = not content_column.visible
             header.trailing.name = ft.Icons.KEYBOARD_ARROW_UP if content_column.visible else ft.Icons.KEYBOARD_ARROW_DOWN
             card_container.update()
 
-        # Робимо весь контейнер клікабельним
         card_container.on_click = toggle_card_expansion
 
-        # Обгортаємо картку в адаптивну колонку для ResponsiveRow
         return ft.Column(
             col={"xs": 12, "sm": 6, "md": 4, "lg": 3},
             controls=[card_container]
         )
 
     def on_submit_click(e):
-        title = video_title_input.value.strip()
+        nonlocal task_counter # Дозволяємо змінювати лічильник
+        title = card_title_input.value.strip()
         text = text_input.value or ""
         selected_languages = [cb.label for cb in language_checkboxes if cb.value]
 
-        if not title or not selected_languages:
+        if not selected_languages:
             return
+        
+        # Автоматична назва для картки, якщо поле порожнє
+        if not title:
+            title = f"Задання {task_counter}"
+            task_counter += 1
 
         task_data = {lang: stages_state[lang] for lang in selected_languages}
         
@@ -150,7 +182,7 @@ def get_main_tab(lang_manager, char_counter, text_input, video_title_input, page
         tasks_container.controls.insert(0, new_card)
 
         text_input.value = ""
-        video_title_input.value = ""
+        card_title_input.value = ""
         for cb in language_checkboxes:
             cb.value = False
         
@@ -158,24 +190,19 @@ def get_main_tab(lang_manager, char_counter, text_input, video_title_input, page
         
         update_ui_elements()
         text_input.update()
-        video_title_input.update()
+        card_title_input.update()
         
         char_counter.value = lang_manager.get_text("characters_count", 0)
         char_counter.update()
 
-        snack_bar = ft.SnackBar(
-            content=ft.Text(lang_manager.get_text("submit_message", len(text))),
-            action=lang_manager.get_text("submit_ok"),
-        )
+        snack_bar = ft.SnackBar(content=ft.Text(lang_manager.get_text("submit_message", len(text))))
         if page:
             page.overlay.append(snack_bar)
             snack_bar.open = True
             page.update()
 
     languages = ["FR", "EN", "RU", "PT", "ES", "IT", "UA"]
-    language_checkboxes = [
-        ft.Checkbox(label=lang, on_change=update_ui_elements) for lang in languages
-    ]
+    language_checkboxes = [ft.Checkbox(label=lang, on_change=update_ui_elements) for lang in languages]
     languages_row = ft.Row(controls=language_checkboxes, scroll=ft.ScrollMode.ADAPTIVE)
 
     main_submit_button = ft.ElevatedButton(
@@ -189,13 +216,13 @@ def get_main_tab(lang_manager, char_counter, text_input, video_title_input, page
         disabled=True
     )
     
-    video_title_input.on_change = update_ui_elements
+    card_title_input.on_change = update_ui_elements
 
     tab_content = ft.Column(
         [
             ft.Text(lang_manager.get_text("main_tab_title"), size=20, weight=ft.FontWeight.BOLD),
             ft.Divider(height=20),
-            video_title_input,
+            card_title_input,
             char_counter,
             text_input,
             ft.Text(lang_manager.get_text("translation_languages_label"), size=16),

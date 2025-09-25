@@ -32,5 +32,7 @@
   "stage_montage": "Montage",
   "stage_description": "Description",
   "video_title_label": "Video title:",
-  "stage_preview": "Preview"
+  "stage_preview": "Preview",
+  "card_title_label": "Task name (for card):",
+"translated_video_title_label": "Final video title"
 }

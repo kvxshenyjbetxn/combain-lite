@@ -32,5 +32,7 @@
   "stage_montage": "Монтаж",
   "stage_description": "Опис",
   "stage_preview": "Превью",
-  "video_title_label": "Назва для відео:"
+  "video_title_label": "Назва для відео:",
+  "card_title_label": "Назва завдання (для картки):",
+"translated_video_title_label": "Кінцева назва відео"
 }
