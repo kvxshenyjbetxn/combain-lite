@@ -4,6 +4,8 @@ from collections import defaultdict
 import uuid
 import os
 import base64
+import re
+import threading
 
 from firebase_auth import stream_manager
 
@@ -17,72 +19,66 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
     
     # --- Функція для оновлення UI картки ---
     def update_task_card_ui(task_id, new_data):
-        if task_id in submitted_tasks:
-            card_control = submitted_tasks[task_id]['card_control']
+        if task_id not in submitted_tasks:
+            return
+        
+        card_control = submitted_tasks[task_id]['card_control']
+        status_indicator = card_control.controls[0].content.controls[0].controls[0].content.controls[1]
+        
+        status_text = new_data.get('status', 'unknown')
+        
+        # --- НАДІЙНИЙ МЕХАНІЗМ ЗБЕРЕЖЕННЯ ---
+        # Якщо ми отримали фінальний статус, і ще не виконували фінальне збереження для цього завдання:
+        if status_text == "completed" and not submitted_tasks[task_id].get('is_final_save_done'):
             
-            # Оновлюємо статус в UI
-            status_indicator = card_control.controls[0].content.controls[0].controls[0].content.controls[1]
-            status_text = new_data.get('status', 'unknown')
+            # Позначаємо, що ми почали фінальне збереження, щоб не робити це двічі
+            submitted_tasks[task_id]['is_final_save_done'] = True
             
-            status_map = {
-                "new": (lang_manager.get_text("task_new"), ft.Colors.GREY),
-                "processing_translation": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
-                "completed_translation": (lang_manager.get_text("task_completed"), ft.Colors.GREEN),
-                "completed_image_prompts": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
-                "processing_images": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
-                "completed": (lang_manager.get_text("task_completed_full"), ft.Colors.PURPLE),
-                "error": (lang_manager.get_text("task_error"), ft.Colors.RED)
-            }
-            
-            status_display_text, status_color = status_map.get(status_text, (status_text, ft.Colors.BLACK))
-            
-            status_indicator.value = status_display_text
-            status_indicator.color = status_color
-            
-            # Зберігаємо результат, якщо він є
-            # ВАЖЛИВЕ ВИПРАВЛЕННЯ:
-            # Для фінальних статусів 'completed' або 'error', ми не покладаємося на 
-            # локально зібрані дані, а робимо фінальний запит до бази даних,
-            # щоб гарантовано отримати ВСІ дані (включно з картинками).
-            if status_text in ["completed", "error"]:
-                print(f"  > Отримано фінальний статус '{status_text}'. Роблю запит повної версії завдання...")
-                try:
-                    user_id = user_data['localId']
-                    # Робимо прямий запит до Firebase для отримання остаточних даних
-                    final_task_data = db.child("tasks").child(user_id).child(task_id).get().val()
-                    if final_task_data:
-                        # Оновлюємо локальний кеш остаточними даними
-                        submitted_tasks[task_id]['data'] = final_task_data
-                        save_task_results(task_id, final_task_data)
-                    else:
-                        print(f"  > [!] Не вдалося отримати фінальні дані для завдання {task_id}.")
-                        # Навіть якщо запит не вдався, спробуємо зберегти те, що маємо локально
-                        save_task_results(task_id, submitted_tasks[task_id]['data'])
-                except Exception as e:
-                    print(f"  > [!] Помилка під час запиту фінальних даних: {e}")
-                    save_task_results(task_id, submitted_tasks[task_id]['data']) # Fallback
-            else:
-                # Для проміжних статусів зберігаємо те, що прийшло по стріму
-                save_task_results(task_id, new_data)
+            print(f"\n[!!!] ОТРИМАНО СТАТУС 'COMPLETED'. РОБЛЮ ПРЯМИЙ ЗАПИТ ПОВНИХ ДАНИХ...")
+            try:
+                user_id = user_data['localId']
+                # Робимо прямий запит до Firebase, щоб отримати 100% повні дані
+                final_task_data = db.child("tasks").child(user_id).child(task_id).get().val()
+                if final_task_data:
+                    print("[!!!] УСПІШНО ОТРИМАНО ПОВНІ ДАНІ. ЗАПУСКАЮ ЗБЕРЕЖЕННЯ ВСІХ РЕЗУЛЬТАТІВ...")
+                    # Оновлюємо локальний кеш остаточними даними
+                    submitted_tasks[task_id]['data'] = final_task_data
+                    # Викликаємо збереження з цими повними, надійними даними
+                    save_task_results(task_id, final_task_data)
+                else:
+                    print(f"[!!!] ПОМИЛКА: Не вдалося отримати фінальні дані для завдання {task_id}.")
 
-
-            if page: page.update()
+            except Exception as e:
+                print(f"[!!!] КРИТИЧНА ПОМИЛКА під час фінального запиту даних: {e}")
+        
+        # --- Оновлення візуального статусу в UI (як і раніше) ---
+        status_map = {
+            "new": (lang_manager.get_text("task_new"), ft.Colors.GREY),
+            "processing_translation": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
+            "completed_translation": (lang_manager.get_text("task_completed"), ft.Colors.GREEN),
+            "processing_images": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
+            "completed": (lang_manager.get_text("task_completed_full"), ft.Colors.PURPLE),
+            "error": (lang_manager.get_text("task_error"), ft.Colors.RED)
+        }
+        status_display_text, status_color = status_map.get(status_text, (status_text, ft.Colors.BLACK))
+        status_indicator.value = status_display_text
+        status_indicator.color = status_color
+        
+        if page:
+            page.update()
 
     # --- Функція для збереження результатів ---
     def save_task_results(task_id, task_data):
-        status = task_data.get('status')
-        
-        # Перевіряємо, чи є що зберігати на поточному етапі
-        if status not in ['completed_translation', 'completed']:
+        print(f"\n--- ЗАПУСК ФІНАЛЬНОГО ЗБЕРЕЖЕННЯ для завдання {task_id} ---")
+        if not task_data:
+            print("[!] Помилка: дані завдання для збереження відсутні.")
             return
 
-        print(f"\n--- Збереження результатів для завдання {task_id} (Статус: {status}) ---")
         results_path = lang_manager.get_results_path()
         task_title = task_data.get('title', f'task_{task_id}').replace(' ', '_')
         
         for lang, stages in task_data.get("selected_stages", {}).items():
-            # --- Збереження тексту ---
-            # Текст доступний на обох етапах: completed_translation та completed
+            # Збереження тексту
             translated_text = stages.get('translated_text')
             if translated_text:
                 try:
@@ -95,81 +91,113 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
                 except Exception as e:
                     print(f"  > [!] Помилка збереження тексту для '{lang}': {e}")
 
-            # --- Збереження картинок ---
-            # Картинки доступні тільки на етапі completed
-            if status == 'completed':
-                generated_images = stages.get('generated_images')
-                if generated_images and isinstance(generated_images, dict):
-                    image_count = len(generated_images)
-                    print(f"  > Знайдено {image_count} картинок для '{lang}'. Починаю збереження...")
-                    
-                    img_folder = os.path.join(results_path, lang, "images")
-                    os.makedirs(img_folder, exist_ok=True)
-                    
-                    for i, (image_key, image_data) in enumerate(generated_images.items()):
-                        image_b64 = image_data.get('image_b64')
-                        if image_b64:
-                            try:
-                                image_bytes = base64.b64decode(image_b64)
-                                file_path = os.path.join(img_folder, f"{task_title}_{i+1}.jpg")
-                                with open(file_path, 'wb') as f:
-                                    f.write(image_bytes)
-                                print(f"    - [✓] Картинка {i+1}/{image_count} збережена: {file_path}")
-                            except Exception as e:
-                                print(f"    - [!] Помилка декодування або збереження картинки {i+1}: {e}")
-        print("--- Збереження завершено ---\n")
+            # Збереження картинок
+            generated_images = stages.get('generated_images')
+            if generated_images and isinstance(generated_images, dict):
+                image_count = len(generated_images)
+                print(f"  > Знайдено {image_count} картинок для '{lang}'. Починаю збереження...")
+                
+                img_folder = os.path.join(results_path, lang, "images")
+                os.makedirs(img_folder, exist_ok=True)
+                
+                # Сортуємо картинки за часом створення для правильної нумерації
+                sorted_images = sorted(generated_images.items(), key=lambda item: item[1].get('created_at', 0))
+
+                for i, (image_key, image_data) in enumerate(sorted_images):
+                    image_b64 = image_data.get('image_b64')
+                    if image_b64:
+                        try:
+                            image_bytes = base64.b64decode(image_b64)
+                            file_path = os.path.join(img_folder, f"{task_title}_{i+1}.jpg")
+                            with open(file_path, 'wb') as f:
+                                f.write(image_bytes)
+                            print(f"    - [✓] Картинка {i+1}/{image_count} збережена: {file_path}")
+                        except Exception as e:
+                            print(f"    - [!] Помилка декодування або збереження картинки {i+1}: {e}")
+            else:
+                 print(f"  > [i] Картинки для мови '{lang}' не знайдені в фінальних даних.")
+
+        print("--- Фінальне збереження завершено ---\n")
 
     # --- Створюємо глобальний слухач для всіх завдань користувача ---
     if user_data and db:
         user_id = user_data['localId']
         tasks_ref = db.child("tasks").child(user_id)
+        
+        def save_single_image(task_id, lang, image_key, image_data):
+            """Негайно зберігає одну отриману картинку."""
+            if not image_data or not image_data.get('image_b64'):
+                return
+            
+            try:
+                task_info = submitted_tasks.get(task_id, {}).get('data', {})
+                if not task_info: return
+                    
+                results_path = lang_manager.get_results_path()
+                task_title = task_info.get('title', f'task_{task_id}').replace(' ', '_')
+                
+                img_folder = os.path.join(results_path, lang, "images")
+                os.makedirs(img_folder, exist_ok=True)
+                
+                # Рахуємо, скільки картинок вже є для цього завдання, щоб визначити номер файла
+                image_count = len(task_info.get("selected_stages", {}).get(lang, {}).get("generated_images", {}))
+                
+                image_b64 = image_data['image_b64']
+                image_bytes = base64.b64decode(image_b64)
+                file_path = os.path.join(img_folder, f"{task_title}_{image_count}.jpg")
+                
+                with open(file_path, 'wb') as f:
+                    f.write(image_bytes)
+                print(f"    - [✓] Негайно збережено картинку: {file_path}")
+
+            except Exception as e:
+                print(f"    - [!] Помилка негайного збереження картинки: {e}")
 
         def firebase_stream_handler(message):
-            # Реагуємо тільки на подію 'patch', яка несе оновлення
-            if message["event"] != "patch" or not message.get("data"):
-                return
+            try:
+                if message["event"] != "patch" or not message.get("data"):
+                    return
 
-            path = message["path"]
-            data = message["data"]
-            
-            # Визначаємо ID завдання
-            path_parts = path.strip("/").split("/")
-            if not path_parts: return
-            task_id = path_parts[0]
-
-            if not task_id or task_id not in submitted_tasks:
-                return
-            
-            print(f"Отримано patch-оновлення для завдання {task_id}. Шлях: '{path}', Дані: {data}")
-
-            # Отримуємо поточну локальну копію даних
-            current_task_data = submitted_tasks[task_id]['data']
-
-            # Шлях всередині об'єкта завдання (все, що після ID)
-            inner_keys = path_parts[1:]
-            
-            # Якщо шлях порожній, значить оновлюється корінь завдання (напр. статус)
-            if not inner_keys:
-                current_task_data.update(data)
-            else:
-                # Інакше, йдемо по вкладеному шляху до потрібного місця
-                target_dict = current_task_data
-                for key in inner_keys[:-1]:
-                    target_dict = target_dict.setdefault(key, {})
+                path = message["path"]
+                data = message["data"]
                 
-                final_key = inner_keys[-1]
-                
-                # Це ключове виправлення:
-                # Якщо ключ вже існує і є словником, ми оновлюємо його (додаємо нові поля).
-                # Якщо ключа немає, ми просто створюємо його з новими даними.
-                if final_key in target_dict and isinstance(target_dict[final_key], dict) and isinstance(data, dict):
-                    target_dict[final_key].update(data)
-                else:
-                    target_dict[final_key] = data
+                # --- ДЕТАЛЬНЕ ЛОГУВАННЯ ДЛЯ ДІАГНОСТИКИ ---
+                data_preview = list(data.keys()) if isinstance(data, dict) else data
+                print(f"[STREAM] Path: {path} | Data Keys: {data_preview}")
 
-            # Зберігаємо фінальний результат та оновлюємо UI
-            submitted_tasks[task_id]['data'] = current_task_data
-            update_task_card_ui(task_id, current_task_data)
+                path_parts = [p for p in path.strip("/").split("/") if p]
+                if not path_parts: return
+                task_id = path_parts[0]
+
+                if task_id not in submitted_tasks: return
+
+                # --- Надійно оновлюємо локальну копію даних ---
+                current_task_data = submitted_tasks[task_id]['data']
+                d = current_task_data
+                for key in path_parts[1:]:
+                    d = d.setdefault(key, {})
+                d.update(data)
+                submitted_tasks[task_id]['data'] = current_task_data
+                
+                # --- Перевіряємо, чи це нова картинка ---
+                if path.endswith('/generated_images'):
+                    lang = path_parts[-2]
+                    new_image_key = list(data.keys())[0]
+                    new_image_data = data[new_image_key]
+                    print(f"  > [✓] Отримано дані картинки для '{lang}'. Запускаю збереження у фоні...")
+                    
+                    # ЗАПУСКАЄМО ЗБЕРЕЖЕННЯ В ОКРЕМОМУ ПОТОЦІ, щоб не блокувати отримання інших оновлень
+                    threading.Thread(
+                        target=save_single_image,
+                        args=(task_id, lang, new_image_key, new_image_data),
+                        daemon=True
+                    ).start()
+
+                # --- Запускаємо оновлення інтерфейсу ---
+                update_task_card_ui(task_id, current_task_data)
+
+            except Exception as e:
+                print(f"[!!!] КРИТИЧНА ПОМИЛКА в обробнику стріму: {e}")
 
 
         stream_manager.start_stream(tasks_ref, firebase_stream_handler)
@@ -220,23 +248,48 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
 
     def create_task_card(title, languages_with_stages, task_data_ref):
         content_column = ft.Column(spacing=15, visible=False)
+        image_counters_ref = {} # Словник для зберігання посилань на лічильники
+
         for lang, data in languages_with_stages.items():
             translated_title = data.get("video_title", "").strip() or f"{lang} {title}"
             active_stages = {stage: active for stage, active in data.items() if stage != "video_title" and active}
-            if active_stages:
-                stages_list = ft.Column(spacing=5, controls=[ft.Row([ft.Icon(ft.Icons.CHECK, color=ft.Colors.GREEN_500, size=16), ft.Text(lang_manager.get_text(stage_key), size=14)]) for stage_key in active_stages])
-                content_column.controls.append(ft.Column([
-                    ft.Text(lang, weight=ft.FontWeight.BOLD, size=16),
-                    ft.Container(content=ft.Column([
-                        ft.Row([ft.Text(f"{lang_manager.get_text('translated_video_title_label')}:", weight=ft.FontWeight.BOLD), ft.Text(f'"{translated_title}"')]),
-                        ft.Divider(height=8, thickness=0.5),
-                        ft.Text(lang_manager.get_text("stages_label"), italic=True, size=12),
-                        stages_list
-                    ]), padding=ft.padding.only(left=10))
-                ]))
+            if not active_stages: continue
+
+            stages_list_controls = []
+            for stage_key in active_stages:
+                stage_text = lang_manager.get_text(stage_key)
+                
+                row_controls = [
+                    ft.Icon(ft.Icons.CHECK, color=ft.Colors.GREEN_500, size=16), 
+                    ft.Text(stage_text, size=14)
+                ]
+                
+                # Якщо це етап картинок, створюємо і зберігаємо посилання на лічильник
+                if stage_key == 'stage_images':
+                    progress_text_control = ft.Text("", size=14, color=ft.Colors.GREY_500)
+                    image_counters_ref[lang] = progress_text_control # Зберігаємо посилання
+                    row_controls.append(progress_text_control)
+
+                stages_list_controls.append(ft.Row(controls=row_controls))
+
+            stages_list = ft.Column(spacing=5, controls=stages_list_controls)
+            content_column.controls.append(ft.Column([
+                ft.Text(lang, weight=ft.FontWeight.BOLD, size=16),
+                ft.Container(content=ft.Column([
+                    ft.Row([ft.Text(f"{lang_manager.get_text('translated_video_title_label')}:", weight=ft.FontWeight.BOLD), ft.Text(f'"{translated_title}"')]),
+                    ft.Divider(height=8, thickness=0.5),
+                    ft.Text(lang_manager.get_text("stages_label"), italic=True, size=12),
+                    stages_list
+                ]), padding=ft.padding.only(left=10))
+            ]))
         
         card_container = ft.Container()
-        final_card_column = ft.Column(col={"xs": 12, "sm": 6, "md": 4, "lg": 3}, controls=[card_container], data={'local_id': task_data_ref.get('local_id')})
+        # Додаємо наш словник з посиланнями в дані картки
+        final_card_column = ft.Column(
+            col={"xs": 12, "sm": 6, "md": 4, "lg": 3}, 
+            controls=[card_container], 
+            data={'id': task_data_ref.get('id'), 'image_counters': image_counters_ref}
+        )
         
         def toggle_card_expansion(e):
             content_column.visible = not content_column.visible
@@ -250,7 +303,7 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
             icon_color=ft.Colors.RED_500,
             tooltip=lang_manager.get_text("delete_from_queue_tooltip"),
             on_click=delete_card_directly,
-            data={'local_id': task_data_ref.get('local_id')}
+            data={'id': task_data_ref.get('id')}
         )
         
         header_row = ft.Row(
