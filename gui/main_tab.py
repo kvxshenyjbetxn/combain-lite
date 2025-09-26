@@ -3,6 +3,7 @@ import time
 from collections import defaultdict
 import uuid
 import os
+import base64
 
 from firebase_auth import stream_manager
 
@@ -25,8 +26,11 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
             
             status_map = {
                 "new": (lang_manager.get_text("task_new"), ft.Colors.GREY),
-                "processing": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
+                "processing_translation": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
                 "completed_translation": (lang_manager.get_text("task_completed"), ft.Colors.GREEN),
+                "completed_image_prompts": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
+                "processing_images": (lang_manager.get_text("task_processing"), ft.Colors.BLUE),
+                "completed": (lang_manager.get_text("task_completed_full"), ft.Colors.PURPLE),
                 "error": (lang_manager.get_text("task_error"), ft.Colors.RED)
             }
             
@@ -42,47 +46,53 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
 
     # --- Функція для збереження результатів ---
     def save_task_results(task_id, task_data):
-        print("\n--- ДІАГНОСТИКА ЗБЕРЕЖЕННЯ ---")
-        print(f"Завдання ID: {task_id}")
-        print(f"Отриманий статус: {task_data.get('status')}")
-
-        if task_data.get('status') != 'completed_translation':
-            print("Статус не 'completed_translation'. Збереження пропущено.")
-            print("--- КІНЕЦЬ ДІАГНОСТИКИ ---\n")
+        status = task_data.get('status')
+        
+        # Перевіряємо, чи є що зберігати на поточному етапі
+        if status not in ['completed_translation', 'completed']:
             return
-        
-        print("Статус коректний. Починаю спробу збереження...")
+
+        print(f"\n--- Збереження результатів для завдання {task_id} (Статус: {status}) ---")
         results_path = lang_manager.get_results_path()
-        task_title = task_data.get('title', f'task_{task_id}')
-        print(f"Шлях для збереження: {results_path}")
+        task_title = task_data.get('title', f'task_{task_id}').replace(' ', '_')
         
-        selected_stages = task_data.get("selected_stages", {})
-        if not selected_stages:
-            print("Помилка: блок 'selected_stages' відсутній в даних.")
-        
-        for lang, stages in selected_stages.items():
-            print(f"  - Перевірка мови: {lang}")
-            translated_text = stages.get('translated_text')
-            
-            if translated_text:
-                print(f"    > Знайдено перекладений текст! Спроба зберегти файл...")
-                try:
-                    lang_folder = os.path.join(results_path, lang)
-                    os.makedirs(lang_folder, exist_ok=True)
+        for lang, stages in task_data.get("selected_stages", {}).items():
+            # Зберігаємо перекладений текст, якщо етап завершено
+            if status == 'completed_translation':
+                translated_text = stages.get('translated_text')
+                if translated_text:
+                    try:
+                        lang_folder = os.path.join(results_path, lang, "text")
+                        os.makedirs(lang_folder, exist_ok=True)
+                        file_path = os.path.join(lang_folder, f"{task_title}.txt")
+                        with open(file_path, 'w', encoding='utf-8') as f:
+                            f.write(translated_text)
+                        print(f"  > [✓] Текст для '{lang}' збережено: {file_path}")
+                    except Exception as e:
+                        print(f"  > [!] Помилка збереження тексту для '{lang}': {e}")
+
+            # Зберігаємо згенеровані картинки, якщо етап завершено
+            if status == 'completed':
+                generated_images = stages.get('generated_images')
+                if generated_images and isinstance(generated_images, dict):
+                    image_count = len(generated_images)
+                    print(f"  > Знайдено {image_count} картинок для '{lang}'. Починаю збереження...")
                     
-                    file_name = f"{task_title.replace(' ', '_')}.txt"
-                    file_path = os.path.join(lang_folder, file_name)
+                    img_folder = os.path.join(results_path, lang, "images")
+                    os.makedirs(img_folder, exist_ok=True)
                     
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        f.write(translated_text)
-                    print(f"    > УСПІХ: Результат для '{task_title}' ({lang}) збережено в {file_path}")
-                        
-                except Exception as e:
-                    print(f"    > ПОМИЛКА: Не вдалося зберегти файл для {lang}: {e}")
-            else:
-                print(f"    > Текст для перекладу для мови '{lang}' не знайдено (translated_text is None or empty).")
-        
-        print("--- КІНЕЦЬ ДІАГНОСТИКИ ---\n")
+                    for i, (image_key, image_data) in enumerate(generated_images.items()):
+                        image_b64 = image_data.get('image_b64')
+                        if image_b64:
+                            try:
+                                image_bytes = base64.b64decode(image_b64)
+                                file_path = os.path.join(img_folder, f"{task_title}_{i+1}.jpg")
+                                with open(file_path, 'wb') as f:
+                                    f.write(image_bytes)
+                                print(f"    - [✓] Картинка {i+1}/{image_count} збережена: {file_path}")
+                            except Exception as e:
+                                print(f"    - [!] Помилка декодування або збереження картинки {i+1}: {e}")
+        print("--- Збереження завершено ---\n")
 
     # --- Створюємо глобальний слухач для всіх завдань користувача ---
     if user_data and db:
@@ -97,10 +107,9 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
             path = message["path"]
             data = message["data"]
             
-            # Визначаємо ID завдання з шляху
+            # Визначаємо ID завдання
             path_parts = path.strip("/").split("/")
-            if not path_parts:
-                return
+            if not path_parts: return
             task_id = path_parts[0]
 
             if not task_id or task_id not in submitted_tasks:
@@ -111,22 +120,29 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
             # Отримуємо поточну локальну копію даних
             current_task_data = submitted_tasks[task_id]['data']
 
-            # Беремо шлях ОПІСЛЯ ID завдання
-            keys = path_parts[1:]
+            # Шлях всередині об'єкта завдання (все, що після ID)
+            inner_keys = path_parts[1:]
             
-            # Якщо шлях порожній, оновлюємо корінь завдання
-            if not keys:
+            # Якщо шлях порожній, значить оновлюється корінь завдання (напр. статус)
+            if not inner_keys:
                 current_task_data.update(data)
             else:
-                # Інакше, йдемо по вкладеному шляху
+                # Інакше, йдемо по вкладеному шляху до потрібного місця
                 target_dict = current_task_data
-                for key in keys[:-1]:
+                for key in inner_keys[:-1]:
                     target_dict = target_dict.setdefault(key, {})
-                # Оновлюємо фінальний словник новими даними
-                # Це може бути як один ключ, так і декілька (напр. status і text)
-                target_dict[keys[-1]].update(data)
+                
+                final_key = inner_keys[-1]
+                
+                # Це ключове виправлення:
+                # Якщо ключ вже існує і є словником, ми оновлюємо його (додаємо нові поля).
+                # Якщо ключа немає, ми просто створюємо його з новими даними.
+                if final_key in target_dict and isinstance(target_dict[final_key], dict) and isinstance(data, dict):
+                    target_dict[final_key].update(data)
+                else:
+                    target_dict[final_key] = data
 
-            # Зберігаємо оновлені дані та оновлюємо UI
+            # Зберігаємо фінальний результат та оновлюємо UI
             submitted_tasks[task_id]['data'] = current_task_data
             update_task_card_ui(task_id, current_task_data)
 

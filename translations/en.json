@@ -62,5 +62,6 @@
   "task_processing": "Processing...",
   "task_new": "New",
   "task_error": "Error",
-  "logout_button": "Logout"
+  "logout_button": "Logout",
+  "task_completed_full": "Task fully completed"
 }

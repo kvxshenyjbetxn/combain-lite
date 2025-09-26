@@ -62,5 +62,6 @@
   "task_processing": "В обработке...",
   "task_new": "Новое",
   "task_error": "Ошибка",
-  "logout_button": "Выйти"
+  "logout_button": "Выйти",
+  "task_completed_full": "Задача полностью завершена"
 }

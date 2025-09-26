@@ -62,5 +62,6 @@
   "task_processing": "В обробці...",
   "task_new": "Нове",
   "task_error": "Помилка",
-  "logout_button": "Вийти з акаунту"
+  "logout_button": "Вийти з акаунту",
+  "task_completed_full": "Завершено повністю"
 }
