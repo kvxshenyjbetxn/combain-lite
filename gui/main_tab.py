@@ -40,7 +40,31 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
             status_indicator.color = status_color
             
             # Зберігаємо результат, якщо він є
-            save_task_results(task_id, new_data)
+            # ВАЖЛИВЕ ВИПРАВЛЕННЯ:
+            # Для фінальних статусів 'completed' або 'error', ми не покладаємося на 
+            # локально зібрані дані, а робимо фінальний запит до бази даних,
+            # щоб гарантовано отримати ВСІ дані (включно з картинками).
+            if status_text in ["completed", "error"]:
+                print(f"  > Отримано фінальний статус '{status_text}'. Роблю запит повної версії завдання...")
+                try:
+                    user_id = user_data['localId']
+                    # Робимо прямий запит до Firebase для отримання остаточних даних
+                    final_task_data = db.child("tasks").child(user_id).child(task_id).get().val()
+                    if final_task_data:
+                        # Оновлюємо локальний кеш остаточними даними
+                        submitted_tasks[task_id]['data'] = final_task_data
+                        save_task_results(task_id, final_task_data)
+                    else:
+                        print(f"  > [!] Не вдалося отримати фінальні дані для завдання {task_id}.")
+                        # Навіть якщо запит не вдався, спробуємо зберегти те, що маємо локально
+                        save_task_results(task_id, submitted_tasks[task_id]['data'])
+                except Exception as e:
+                    print(f"  > [!] Помилка під час запиту фінальних даних: {e}")
+                    save_task_results(task_id, submitted_tasks[task_id]['data']) # Fallback
+            else:
+                # Для проміжних статусів зберігаємо те, що прийшло по стріму
+                save_task_results(task_id, new_data)
+
 
             if page: page.update()
 
@@ -57,21 +81,22 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
         task_title = task_data.get('title', f'task_{task_id}').replace(' ', '_')
         
         for lang, stages in task_data.get("selected_stages", {}).items():
-            # Зберігаємо перекладений текст, якщо етап завершено
-            if status == 'completed_translation':
-                translated_text = stages.get('translated_text')
-                if translated_text:
-                    try:
-                        lang_folder = os.path.join(results_path, lang, "text")
-                        os.makedirs(lang_folder, exist_ok=True)
-                        file_path = os.path.join(lang_folder, f"{task_title}.txt")
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            f.write(translated_text)
-                        print(f"  > [✓] Текст для '{lang}' збережено: {file_path}")
-                    except Exception as e:
-                        print(f"  > [!] Помилка збереження тексту для '{lang}': {e}")
+            # --- Збереження тексту ---
+            # Текст доступний на обох етапах: completed_translation та completed
+            translated_text = stages.get('translated_text')
+            if translated_text:
+                try:
+                    lang_folder = os.path.join(results_path, lang, "text")
+                    os.makedirs(lang_folder, exist_ok=True)
+                    file_path = os.path.join(lang_folder, f"{task_title}.txt")
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(translated_text)
+                    print(f"  > [✓] Текст для '{lang}' збережено: {file_path}")
+                except Exception as e:
+                    print(f"  > [!] Помилка збереження тексту для '{lang}': {e}")
 
-            # Зберігаємо згенеровані картинки, якщо етап завершено
+            # --- Збереження картинок ---
+            # Картинки доступні тільки на етапі completed
             if status == 'completed':
                 generated_images = stages.get('generated_images')
                 if generated_images and isinstance(generated_images, dict):
@@ -297,38 +322,61 @@ def get_main_tab(lang_manager, char_counter, text_input, card_title_input, page=
             return
 
         submitted_cards = list(tasks_container.controls)
+        successful_sends = 0
         
-        for i, task_data in enumerate(local_tasks_queue):
+        tasks_to_process = list(local_tasks_queue) # Копіюємо чергу
+        local_tasks_queue.clear() # Очищуємо оригінал
+
+        for i, task_data in enumerate(tasks_to_process):
+            task_id = None  # Ініціалізуємо task_id
             try:
                 task_id = str(uuid.uuid4())
                 user_id = task_data['userId']
-                
-                # Додаємо час створення перед відправкою
+
                 task_data_to_send = task_data.copy()
                 task_data_to_send["created_at"] = int(time.time())
+
+                # ВИПРАВЛЕННЯ: Спочатку реєструємо завдання локально, щоб уникнути race condition
+                # Шукаємо відповідну картку в UI
+                card_control = next(card for card in submitted_cards if card.data.get('id') == task_data.get('id'))
                 
-                db.child("tasks").child(user_id).child(task_id).set(task_data_to_send)
-                
-                # Зберігаємо картку для майбутніх оновлень
-                card_control = submitted_cards[len(local_tasks_queue) - 1 - i]
                 submitted_tasks[task_id] = {
                     'data': task_data_to_send,
                     'card_control': card_control
                 }
                 
-                # Вимикаємо кнопку видалення для відправленої картки
+                # Вимикаємо кнопку видалення
                 delete_button = card_control.controls[0].content.controls[0].controls[1]
                 delete_button.disabled = True
+                if page: page.update() # Негайно оновлюємо UI, щоб кнопка стала неактивною
+
+                # Потім відправляємо на сервер
+                db.child("tasks").child(user_id).child(task_id).set(task_data_to_send)
+                successful_sends += 1
 
             except Exception as ex:
                 print(f"Помилка відправки завдання '{task_data['title']}' в Firebase: {ex}")
+                # Якщо сталася помилка, відкочуємо зміни для цього завдання
+                if task_id and task_id in submitted_tasks:
+                    # Повертаємо картку в стан "можна видалити"
+                    card_control = submitted_tasks[task_id]['card_control']
+                    delete_button = card_control.controls[0].content.controls[0].controls[1]
+                    delete_button.disabled = False
+                    if page: page.update()
+                    # Видаляємо завдання зі списку відстеження
+                    del submitted_tasks[task_id]
+                # Повертаємо завдання назад у локальну чергу, щоб користувач міг спробувати ще раз
+                local_tasks_queue.append(task_data)
 
-        snack_bar = ft.SnackBar(content=ft.Text(lang_manager.get_text("queue_sent_message", len(local_tasks_queue))))
-        local_tasks_queue.clear()
-        main_submit_button.disabled = True
+
+        if successful_sends > 0:
+            snack_bar = ft.SnackBar(content=ft.Text(lang_manager.get_text("queue_sent_message", successful_sends)))
+            if page:
+                page.overlay.append(snack_bar)
+                snack_bar.open = True
+        
+        main_submit_button.disabled = not local_tasks_queue
         if page:
-            page.overlay.append(snack_bar)
-            snack_bar.open = True
             page.update()
             
     def update_ui_elements(e=None):
